@@ -1,0 +1,10 @@
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
+/.idea
+all_code.txt
+.junie/guidelines.md
+identiverse-backend.sln.DotSettings.user
+.DS_Store
