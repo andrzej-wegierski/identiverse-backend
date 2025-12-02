@@ -37,15 +37,11 @@ public class PersonEntityConfiguration : IEntityTypeConfiguration<Person>
         
         builder.Property(p => p.PreferredName)
             .HasMaxLength(100);
-        
+
         builder.Property(p => p.CreatedAt)
-            .IsRequired()
-            .HasColumnType("timestamp without time zone")
-            .HasDefaultValueSql("(now() at time zone 'utc')");
-        
+            .IsRequired();
+
         builder.Property(p => p.UpdatedAt)
-            .IsRequired()
-            .HasColumnType("timestamp without time zone")
-            .HasDefaultValueSql("(now() at time zone 'utc')");
+            .IsRequired();
     }
 }
