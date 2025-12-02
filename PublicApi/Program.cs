@@ -1,4 +1,5 @@
 using Database.DependencyInjection;
+using Domain.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,6 +7,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 
 builder.Services.AddDatabase(builder.Configuration);
+builder.Services.AddDomain();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

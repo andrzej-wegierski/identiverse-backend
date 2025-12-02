@@ -1,3 +1,6 @@
+using Database.Factories;
+using Database.Repositories;
+using Domain.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +15,12 @@ public static class AddDatabaseDependencyInjection
         services.Configure<IdentiverseDatabaseOption>(configuration.GetSection("IdentiverseDatabase"));
         var connectionString = configuration.GetSection("IdentiverseDatabase:ConnectionString").Value;
         services.AddDbContext<IdentiverseDbContext>(options => options.UseNpgsql(connectionString));
+        
+        // Repositories
+        services.AddScoped<IPersonRepository, PersonRepository>();
+        
+        // Factories
+        services.AddScoped<IPersonFactory, PersonFactory>();
 
         return services;
     }

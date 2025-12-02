@@ -5,13 +5,13 @@ namespace Database.Entities;
 
 public class Person
 {
-    public int Id { get; init; }
+    public int Id { get; set; }
     public Guid ExternalId { get; init; }
-    public string FirstName { get; init; } = null!;
-    public string LastName { get; init; } = null!;
-    public string? PreferredName { get; init; }
+    public string FirstName { get; set; } = null!;
+    public string LastName { get; set; } = null!;
+    public string? PreferredName { get; set; }
     public DateTime CreatedAt { get; init; }
-    public DateTime UpdatedAt { get; init; }
+    public DateTime UpdatedAt { get; set; }
 }
 
 public class PersonEntityConfiguration : IEntityTypeConfiguration<Person>

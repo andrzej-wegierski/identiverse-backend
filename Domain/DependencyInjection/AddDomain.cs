@@ -1,0 +1,16 @@
+using Domain.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Domain.DependencyInjection;
+
+public static class AddDomainDependencyInjection
+{
+    public static IServiceCollection AddDomain(this IServiceCollection services)
+    {
+        // Services
+        services.AddScoped<IPersonService, PersonService>();
+        
+        return services;
+    } 
+    
+}
