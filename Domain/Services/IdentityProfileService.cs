@@ -30,9 +30,9 @@ public class IdentityProfileService : IIdentityProfileService
     public Task<IdentityProfileDto?> GetProfileByIdAsync(int id, CancellationToken ct = default)
         => _repo.GetProfileByIdAsync(id, ct);
 
-    public async Task<IdentityProfileDto> CreateProfileAsync(int personId, CreateIdentityProfileDto dto,
+    public  Task<IdentityProfileDto> CreateProfileAsync(int personId, CreateIdentityProfileDto dto,
         CancellationToken ct = default)
-        => await _repo.CreateProfileAsync(personId, dto, ct);
+        => _repo.CreateProfileAsync(personId, dto, ct);
 
     public Task<IdentityProfileDto?> UpdateProfileAsync(int id, UpdateIdentityProfileDto dto, CancellationToken ct = default)
         => _repo.UpdateProfileAsync(id, dto, ct);

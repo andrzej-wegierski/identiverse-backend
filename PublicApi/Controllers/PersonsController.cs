@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace identiverse_backend.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("/persons")]
 public class PersonsController : ControllerBase
 {
     private readonly IPersonService _service;

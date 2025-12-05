@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace identiverse_backend.Controllers;
 
 [ApiController]
-[Route("persons/{personId:int}/identities")]
+[Route("/identities")]
 public class IdentityProfilesController : ControllerBase
 {
     private readonly IIdentityProfileService _service;
