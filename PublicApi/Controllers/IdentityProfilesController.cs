@@ -1,4 +1,3 @@
-using Database.Entities;
 using Domain.Models;
 using Domain.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace identiverse_backend.Controllers;
 
 [ApiController]
-[Route("{personId:int}")]
+[Route("persons/{personId:int}/identities")]
 public class IdentityProfilesController : ControllerBase
 {
     private readonly IIdentityProfileService _service;
@@ -17,14 +16,14 @@ public class IdentityProfilesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<IdentityProfile>>> GetProfilesForPerson(int personId, CancellationToken ct)
+    public async Task<ActionResult<List<IdentityProfileDto>>> GetProfilesForPerson(int personId, CancellationToken ct)
     {
         var list = await _service.GetProfilesByPersonAsync(personId, ct);
         return Ok(list);
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<IdentityProfile>> GetProfileById(int id, CancellationToken ct)
+    public async Task<ActionResult<IdentityProfileDto>> GetProfileById(int id, CancellationToken ct)
     {
         var dto = await _service.GetProfileByIdAsync(id, ct);
         return dto is null ? NotFound() : Ok(dto);
