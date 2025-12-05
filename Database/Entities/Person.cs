@@ -12,6 +12,8 @@ public class Person
     public string? PreferredName { get; set; }
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; set; }
+
+    public List<IdentityProfile> IdentityProfiles { get; init; } = [];
 }
 
 public class PersonEntityConfiguration : IEntityTypeConfiguration<Person>
