@@ -7,12 +7,12 @@ public class IdentityProfile
 {
     public int Id { get; init; }
     public int PersonId { get; init; }
-    public string DisplayName { get; init; } = string.Empty;
-    public string Context { get; init; } = string.Empty;
-    public string? Language { get; init; }
-    public bool IsDefaultForContext { get; init; }
+    public string DisplayName { get; set; } = string.Empty;
+    public string Context { get; set; } = string.Empty;
+    public string? Language { get; set; }
+    public bool IsDefaultForContext { get; set; }
     public DateTime CreatedAt { get; init; }
-    public DateTime UpdatedAt { get; init; }
+    public DateTime UpdatedAt { get; set; }
 
     public Person Person { get; init; } = null!; 
 }
