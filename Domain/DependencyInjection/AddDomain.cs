@@ -9,6 +9,7 @@ public static class AddDomainDependencyInjection
     {
         // Services
         services.AddScoped<IPersonService, PersonService>();
+        services.AddScoped<IIdentityProfileService, IdentityProfileService>();
         
         return services;
     } 
