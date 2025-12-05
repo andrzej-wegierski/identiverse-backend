@@ -40,30 +40,40 @@ public class IdentityProfileService : IIdentityProfileService
     public Task<bool> DeleteProfileAsync(int id, CancellationToken ct = default)
         => _repo.DeleteProfileAsync(id, ct);
 
-    public async Task<IdentityProfileDto?> GetPreferredProfileAsync(int personId, string context, string? language = null, CancellationToken ct = default)
+    public async Task<IdentityProfileDto?> GetPreferredProfileAsync(
+        int personId, 
+        string context, 
+        string? language = null, 
+        CancellationToken ct = default)
     {
         var profiles = await _repo.GetProfilesByPersonAsync(personId, ct);
-        var sameContext =
-            profiles.Where(p => string.Equals(p.Context, context, System.StringComparison.OrdinalIgnoreCase));
 
-        IEnumerable<IdentityProfileDto> identityProfileDtos = sameContext.ToList();
+        var sameContext = profiles
+                .Where(p => string.Equals(p.Context, context, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        
+        if (!sameContext.Any()) 
+            return null;
+
         if (!string.IsNullOrWhiteSpace(language))
         {
-            var langMatch = identityProfileDtos.Where(p =>
-                string.Equals(p.Language, language, System.StringComparison.OrdinalIgnoreCase));
+            var langMatches = sameContext
+                .Where(p => string.Equals(p.Language, language, StringComparison.OrdinalIgnoreCase))
+                .ToList();
 
-            var profileDtos = langMatch.ToList();
-            var defLang = profileDtos.FirstOrDefault(p => p.IsDefaultForContext);
-            if (defLang != null) 
+            var defLang = langMatches.FirstOrDefault(p => p.IsDefaultForContext);
+            if (defLang is not null)
                 return defLang;
-            
-            var anyLang = profileDtos.FirstOrDefault();
+
+            var anyLang = langMatches.FirstOrDefault();
+            if (anyLang is not null)
+                return anyLang;
         }
 
-        var def = identityProfileDtos.FirstOrDefault(p => p.IsDefaultForContext);
-        if (def != null)
+        var def = sameContext.FirstOrDefault(p => p.IsDefaultForContext);
+        if (def is not null)
             return def;
-        
-        return identityProfileDtos.FirstOrDefault();
+
+        return sameContext.FirstOrDefault();
     }
 }
