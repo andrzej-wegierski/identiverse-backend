@@ -32,7 +32,7 @@ public class IdentityProfileRepository : IIdentityProfileRepository
 
     public async Task<IdentityProfileDto?> GetProfileByIdAsync(int id, CancellationToken ct = default)
     {
-        var entity = await _db.IdentityProfiles.AsNoTracking().FirstOrDefaultAsync(p => p.PersonId == id, ct);
+        var entity = await _db.IdentityProfiles.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id, ct);
         return entity is null ? null : _factory.ToDto(entity);
     }
 
@@ -57,7 +57,7 @@ public class IdentityProfileRepository : IIdentityProfileRepository
 
     public async Task<bool> DeleteProfileAsync(int id, CancellationToken ct = default)
     {
-        var entity = await _db.IdentityProfiles.FirstOrDefaultAsync(p => p.PersonId == id, ct);
+        var entity = await _db.IdentityProfiles.FirstOrDefaultAsync(p => p.Id == id, ct);
         if (entity is null)
             return false;
         
