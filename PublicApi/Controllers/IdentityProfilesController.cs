@@ -37,7 +37,7 @@ public class IdentityProfilesController : ControllerBase
         return CreatedAtAction(nameof(GetProfileById), new { id = created.Id }, created);
     }
 
-    [HttpPut("({identityId:int})")]
+    [HttpPut("{identityId:int}")]
     public async Task<ActionResult<IdentityProfileDto>> UpdateProfile(int personId, int identityId,
         [FromBody] UpdateIdentityProfileDto request, CancellationToken ct)
     {
@@ -49,7 +49,7 @@ public class IdentityProfilesController : ControllerBase
         return updated is null ? NotFound() : Ok(updated);
     }
     
-    [HttpDelete("({identityId:int})")]
+    [HttpDelete("{identityId:int}")]
     public async Task<ActionResult> DeleteProfile(int personId, int identityId, CancellationToken ct)
     {
         var deleted = await _service.DeleteProfileAsync(identityId, ct);

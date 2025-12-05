@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace identiverse_backend.Controllers;
 
 [ApiController]
-[AllowAnonymous]
 [Route("[controller]")]
 public class PersonsController : ControllerBase
 {
