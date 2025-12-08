@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace identiverse_backend.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("/persons")]
 public class PersonsController : ControllerBase

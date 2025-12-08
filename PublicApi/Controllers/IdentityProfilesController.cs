@@ -1,9 +1,11 @@
 using Domain.Models;
 using Domain.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace identiverse_backend.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("/identities")]
 public class IdentityProfilesController : ControllerBase
