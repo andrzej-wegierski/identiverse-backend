@@ -19,10 +19,12 @@ public static class AddDatabaseDependencyInjection
         // Repositories
         services.AddScoped<IPersonRepository, PersonRepository>();
         services.AddScoped<IIdentityProfileRepository, IdentityProfileRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
         
         // Factories
         services.AddScoped<IPersonFactory, PersonFactory>();
         services.AddScoped<IIdentityProfileFactory, IdentityProfileFactory>();
+        services.AddScoped<IUserFactory, UserFactory>();
 
         return services;
     }
