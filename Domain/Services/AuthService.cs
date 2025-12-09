@@ -6,6 +6,7 @@ using Domain.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using Domain.Exceptions;
 
 namespace Domain.Services;
 
@@ -29,10 +30,10 @@ public class AuthService : IAuthService
     public async Task<AuthResponseDto> RegisterAsync(RegisterUserDto user, CancellationToken ct = default)
     {
         if (await _repo.IsUsernameTakenAsync(user.Username, ct))
-            throw new InvalidOperationException("Username is already taken");
+            throw new ConflictException("Username is already taken");
         
         if (await _repo.IsEmailTakenAsync(user.Email, ct))
-            throw new InvalidOperationException("Email is already registered");
+            throw new ConflictException("Email is already registered");
         
         var salt = RandomNumberGenerator.GetBytes(16);
         var hash = HashPassword(user.Password, salt);
@@ -40,7 +41,7 @@ public class AuthService : IAuthService
         var newUserId = await _repo.RegisterUserAsync(user, hash, salt, ct);
 
         var userDto = await _repo.GetByIdAsync(newUserId, ct) ??
-                      throw new InvalidOperationException("User not found after create");
+                      throw new NotFoundException("User not found after create");
         
         return CreateAuthResponse(userDto);
     }
@@ -49,14 +50,14 @@ public class AuthService : IAuthService
     {
         var auth = await _repo.GetAuthByUserNameOrEmailAsync(user.UsernameOrEmail, ct);
         if (auth is null)
-            throw new UnauthorizedAccessException("Invalid credentials");
+            throw new UnauthorizedIdentiverseException("Invalid credentials");
         
         var salt = Convert.FromBase64String(auth.PasswordSalt);
         var computed = Convert.ToBase64String(HashPassword(user.Password, salt));
         var expected = auth.PasswordHash;
         
         if (!CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(expected), Encoding.UTF8.GetBytes(computed)))
-            throw new UnauthorizedAccessException("Invalid credentials");
+            throw new UnauthorizedIdentiverseException("Invalid credentials");
         
         return CreateAuthResponse(auth.User);
     }
