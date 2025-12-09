@@ -1,4 +1,5 @@
 using Domain.Abstractions;
+using Domain.Enums;
 using Domain.Models;
 
 namespace Domain.Services;
@@ -11,7 +12,7 @@ public interface IIdentityProfileService
     Task<IdentityProfileDto?> UpdateProfileAsync(int id, UpdateIdentityProfileDto dto, CancellationToken ct = default);
     Task<bool> DeleteProfileAsync(int id, CancellationToken ct = default);
     
-    Task<IdentityProfileDto?> GetPreferredProfileAsync(int personId, string context, string? language, CancellationToken ct = default);
+    Task<IdentityProfileDto?> GetPreferredProfileAsync(int personId, IdentityContext context, string? language, CancellationToken ct = default);
 }
 
 public class IdentityProfileService : IIdentityProfileService
@@ -42,14 +43,14 @@ public class IdentityProfileService : IIdentityProfileService
 
     public async Task<IdentityProfileDto?> GetPreferredProfileAsync(
         int personId, 
-        string context, 
+        IdentityContext context, 
         string? language = null, 
         CancellationToken ct = default)
     {
         var profiles = await _repo.GetProfilesByPersonAsync(personId, ct);
 
         var sameContext = profiles
-                .Where(p => string.Equals(p.Context, context, StringComparison.OrdinalIgnoreCase))
+                .Where(p => p.Context == context)
                 .ToList();
         
         if (!sameContext.Any()) 

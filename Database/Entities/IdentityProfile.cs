@@ -1,3 +1,4 @@
+using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -8,7 +9,7 @@ public class IdentityProfile
     public int Id { get; init; }
     public int PersonId { get; init; }
     public string DisplayName { get; set; } = string.Empty;
-    public string Context { get; set; } = string.Empty;
+    public IdentityContext Context { get; set; }
     public string? Language { get; set; }
     public bool IsDefaultForContext { get; set; }
     public DateTime CreatedAt { get; init; }
@@ -28,6 +29,7 @@ public class IdentityProfileEntityConfiguration : IEntityTypeConfiguration<Ident
             .HasMaxLength(200);
         
         builder.Property(p => p.Context)
+            .HasConversion<string>()
             .IsRequired()
             .HasMaxLength(100);
         

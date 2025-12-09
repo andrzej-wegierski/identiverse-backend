@@ -1,3 +1,4 @@
+using Domain.Enums;
 using Domain.Models;
 using Domain.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -63,7 +64,7 @@ public class IdentityProfilesControllerTests
     {
         _currentUser.SetupGet(u => u.IsAdmin).Returns(false);
         _currentUser.Setup(u => u.GetCurrentUser()).Returns(new CurrentUser { UserId = 1, Username = "u", Role = "User", PersonId = 10 });
-        var create = new CreateIdentityProfileDto { DisplayName = "Alice (Work)", Context = "Work", Language = "en-GB", IsDefaultForContext = true };
+        var create = new CreateIdentityProfileDto { DisplayName = "Alice (Work)", Context = IdentityContext.Legal, Language = "en-GB", IsDefaultForContext = true };
         var created = new IdentityProfileDto { Id = 42, PersonId = 10 };
         _service.Setup(s => s.CreateProfileAsync(10, create, It.IsAny<CancellationToken>()))
             .ReturnsAsync(created);
@@ -83,7 +84,7 @@ public class IdentityProfilesControllerTests
     {
         _currentUser.SetupGet(u => u.IsAdmin).Returns(false);
         _currentUser.Setup(u => u.GetCurrentUser()).Returns(new CurrentUser { UserId = 1, Username = "u", Role = "User", PersonId = 10 });
-        var update = new UpdateIdentityProfileDto { DisplayName = "Alice (Work)", Context = "Work", Language = "en-GB", IsDefaultForContext = false };
+        var update = new UpdateIdentityProfileDto { DisplayName = "Alice (Work)", Context = IdentityContext.Legal, Language = "en-GB", IsDefaultForContext = false };
         var existing = new IdentityProfileDto { Id = 7, PersonId = 10 };
         var updated = new IdentityProfileDto { Id = 7, PersonId = 10, DisplayName = "Updated" };
 
@@ -103,7 +104,7 @@ public class IdentityProfilesControllerTests
     {
         _currentUser.SetupGet(u => u.IsAdmin).Returns(false);
         _currentUser.Setup(u => u.GetCurrentUser()).Returns(new CurrentUser { UserId = 1, Username = "u", Role = "User", PersonId = 10 });
-        var update = new UpdateIdentityProfileDto { DisplayName = "X", Context = "Work" };
+        var update = new UpdateIdentityProfileDto { DisplayName = "X", Context = IdentityContext.Legal };
         _service.Setup(s => s.GetProfileByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync((IdentityProfileDto?)null);
 
         var controller = CreateSut();
@@ -142,12 +143,12 @@ public class IdentityProfilesControllerTests
     {
         _currentUser.SetupGet(u => u.IsAdmin).Returns(false);
         _currentUser.Setup(u => u.GetCurrentUser()).Returns(new CurrentUser { UserId = 1, Username = "u", Role = "User", PersonId = 10 });
-        var dto = new IdentityProfileDto { Id = 100, PersonId = 10, Context = "Work", Language = "en-GB" };
-        _service.Setup(s => s.GetPreferredProfileAsync(10, "Work", "en-GB", It.IsAny<CancellationToken>()))
+        var dto = new IdentityProfileDto { Id = 100, PersonId = 10, Context = IdentityContext.Legal, Language = "en-GB" };
+        _service.Setup(s => s.GetPreferredProfileAsync(10, IdentityContext.Legal, "en-GB", It.IsAny<CancellationToken>()))
             .ReturnsAsync(dto);
 
         var controller = CreateSut();
-        var action = await controller.GetPreferredProfile(10, "Work", "en-GB", default);
+        var action = await controller.GetPreferredProfile(10, IdentityContext.Legal, "en-GB", default);
 
         Assert.That(action.Result, Is.InstanceOf<OkObjectResult>());
         var ok = (OkObjectResult)action.Result!;
@@ -159,11 +160,11 @@ public class IdentityProfilesControllerTests
     {
         _currentUser.SetupGet(u => u.IsAdmin).Returns(false);
         _currentUser.Setup(u => u.GetCurrentUser()).Returns(new CurrentUser { UserId = 1, Username = "u", Role = "User", PersonId = 10 });
-        _service.Setup(s => s.GetPreferredProfileAsync(10, "Work", null, It.IsAny<CancellationToken>()))
+        _service.Setup(s => s.GetPreferredProfileAsync(10, IdentityContext.Legal, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync((IdentityProfileDto?)null);
 
         var controller = CreateSut();
-        var action = await controller.GetPreferredProfile(10, "Work", null, default);
+        var action = await controller.GetPreferredProfile(10, IdentityContext.Legal, null, default);
         Assert.That(action.Result, Is.InstanceOf<NotFoundResult>());
     }
 

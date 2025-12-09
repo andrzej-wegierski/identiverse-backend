@@ -1,4 +1,5 @@
 using Domain.Abstractions;
+using Domain.Enums;
 using Domain.Models;
 using Domain.Services;
 using Moq;
@@ -12,14 +13,14 @@ public class IdentityProfileServiceTests
     {
         var profiles = new List<IdentityProfileDto>
         {
-            new() { Id = 1, PersonId = 10, Context = "Work", Language = "en-GB", DisplayName = "A", IsDefaultForContext = true },
-            new() { Id = 2, PersonId = 10, Context = "Work", Language = "nb-NO", DisplayName = "B", IsDefaultForContext = false },
+            new() { Id = 1, PersonId = 10, Context = IdentityContext.Legal, Language = "en-GB", DisplayName = "A", IsDefaultForContext = true },
+            new() { Id = 2, PersonId = 10, Context = IdentityContext.Legal, Language = "nb-NO", DisplayName = "B", IsDefaultForContext = false },
         };
         var repo = new Mock<IIdentityProfileRepository>();
         repo.Setup(r => r.GetProfilesByPersonAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
         var service = new IdentityProfileService(repo.Object);
 
-        var preferred = await service.GetPreferredProfileAsync(10, "Work", "en-GB");
+        var preferred = await service.GetPreferredProfileAsync(10, IdentityContext.Legal, "en-GB");
         Assert.That(preferred!.Id, Is.EqualTo(1));
     }
 
@@ -28,14 +29,14 @@ public class IdentityProfileServiceTests
     {
         var profiles = new List<IdentityProfileDto>
         {
-            new() { Id = 1, PersonId = 10, Context = "Work", Language = "en-GB", DisplayName = "A", IsDefaultForContext = false },
-            new() { Id = 2, PersonId = 10, Context = "Work", Language = "nb-NO", DisplayName = "B", IsDefaultForContext = false },
+            new() { Id = 1, PersonId = 10, Context = IdentityContext.Legal, Language = "en-GB", DisplayName = "A", IsDefaultForContext = false },
+            new() { Id = 2, PersonId = 10, Context = IdentityContext.Legal, Language = "nb-NO", DisplayName = "B", IsDefaultForContext = false },
         };
         var repo = new Mock<IIdentityProfileRepository>();
         repo.Setup(r => r.GetProfilesByPersonAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
         var service = new IdentityProfileService(repo.Object);
 
-        var preferred = await service.GetPreferredProfileAsync(10, "Work", "en-GB");
+        var preferred = await service.GetPreferredProfileAsync(10, IdentityContext.Legal, "en-GB");
         Assert.That(preferred, Is.Not.Null);
         Assert.That(preferred!.Language, Is.EqualTo("en-GB"));
     }
@@ -45,14 +46,14 @@ public class IdentityProfileServiceTests
     {
         var profiles = new List<IdentityProfileDto>
         {
-            new() { Id = 1, PersonId = 10, Context = "Work", Language = "en-GB", DisplayName = "A", IsDefaultForContext = true },
-            new() { Id = 2, PersonId = 10, Context = "Work", Language = "nb-NO", DisplayName = "B", IsDefaultForContext = false },
+            new() { Id = 1, PersonId = 10, Context = IdentityContext.Legal, Language = "en-GB", DisplayName = "A", IsDefaultForContext = true },
+            new() { Id = 2, PersonId = 10, Context = IdentityContext.Legal, Language = "nb-NO", DisplayName = "B", IsDefaultForContext = false },
         };
         var repo = new Mock<IIdentityProfileRepository>();
         repo.Setup(r => r.GetProfilesByPersonAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
         var service = new IdentityProfileService(repo.Object);
 
-        var preferred = await service.GetPreferredProfileAsync(10, "Work", null);
+        var preferred = await service.GetPreferredProfileAsync(10, IdentityContext.Legal, null);
         Assert.That(preferred!.Id, Is.EqualTo(1));
     }
 
@@ -61,16 +62,16 @@ public class IdentityProfileServiceTests
     {
         var profiles = new List<IdentityProfileDto>
         {
-            new() { Id = 1, PersonId = 10, Context = "Work", Language = "en-GB", DisplayName = "A", IsDefaultForContext = false },
-            new() { Id = 2, PersonId = 10, Context = "Work", Language = "nb-NO", DisplayName = "B", IsDefaultForContext = false },
+            new() { Id = 1, PersonId = 10, Context = IdentityContext.Legal, Language = "en-GB", DisplayName = "A", IsDefaultForContext = false },
+            new() { Id = 2, PersonId = 10, Context = IdentityContext.Legal, Language = "nb-NO", DisplayName = "B", IsDefaultForContext = false },
         };
         var repo = new Mock<IIdentityProfileRepository>();
         repo.Setup(r => r.GetProfilesByPersonAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
         var service = new IdentityProfileService(repo.Object);
 
-        var preferred = await service.GetPreferredProfileAsync(10, "Work", null);
+        var preferred = await service.GetPreferredProfileAsync(10, IdentityContext.Legal, null);
         Assert.That(preferred, Is.Not.Null);
-        Assert.That(preferred!.Context, Is.EqualTo("Work"));
+        Assert.That(preferred!.Context, Is.EqualTo(IdentityContext.Legal));
     }
 
     [Test]
@@ -78,13 +79,13 @@ public class IdentityProfileServiceTests
     {
         var profiles = new List<IdentityProfileDto>
         {
-            new() { Id = 1, PersonId = 10, Context = "Social", Language = "en-GB", DisplayName = "A", IsDefaultForContext = false }
+            new() { Id = 1, PersonId = 10, Context = IdentityContext.Social, Language = "en-GB", DisplayName = "A", IsDefaultForContext = false }
         };
         var repo = new Mock<IIdentityProfileRepository>();
         repo.Setup(r => r.GetProfilesByPersonAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
         var service = new IdentityProfileService(repo.Object);
 
-        var preferred = await service.GetPreferredProfileAsync(10, "Work", null);
+        var preferred = await service.GetPreferredProfileAsync(10, IdentityContext.Legal, null);
         Assert.That(preferred, Is.Null);
     }
 }

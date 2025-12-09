@@ -1,3 +1,4 @@
+using Domain.Enums;
 using Domain.Models;
 using Domain.Services;
 using identiverse_backend.Services;
@@ -84,7 +85,7 @@ public class IdentityProfilesController : ControllerBase
     }
     
     [HttpGet("preferred")]
-    public async Task<ActionResult<IdentityProfileDto?>> GetPreferredProfile(int personId, [FromQuery] string context, [FromQuery] string? language, CancellationToken ct )
+    public async Task<ActionResult<IdentityProfileDto?>> GetPreferredProfile(int personId, [FromQuery] IdentityContext context, [FromQuery] string? language, CancellationToken ct )
     {
         if (!AuthorizationHelpers.CanAccessPerson(_user, personId))
             return Forbid();

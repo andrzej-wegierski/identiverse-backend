@@ -28,7 +28,7 @@ public class IdentityProfileFactory : IIdentityProfileFactory
     {
         PersonId = personId,
         DisplayName = dto.DisplayName.Trim(),
-        Context = dto.Context.Trim(),
+        Context = dto.Context,
         Language = string.IsNullOrWhiteSpace(dto.Language) ? null : dto.Language.Trim(),
         IsDefaultForContext = dto.IsDefaultForContext,
         CreatedAt = DateTime.UtcNow,
@@ -38,7 +38,7 @@ public class IdentityProfileFactory : IIdentityProfileFactory
     public void UpdateEntity(IdentityProfile entity, UpdateIdentityProfileDto dto)
     {
         entity.DisplayName = dto.DisplayName.Trim();
-        entity.Context = dto.Context.Trim();
+        entity.Context = dto.Context;
         entity.Language = string.IsNullOrWhiteSpace(dto.Language) ? null : dto.Language.Trim();
         entity.IsDefaultForContext = dto.IsDefaultForContext;
         entity.UpdatedAt = DateTime.UtcNow;

@@ -2,6 +2,7 @@ using Database;
 using Database.Entities;
 using Database.Factories;
 using Database.Repositories;
+using Domain.Enums;
 using Domain.Models;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -46,7 +47,7 @@ public class IdentityProfileRepositoryTests
 
         var created = await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto
         {
-            DisplayName = "Alice (Work)", Context = "Work", Language = "en-GB", IsDefaultForContext = true
+            DisplayName = "Alice (Work)", Context = IdentityContext.Legal, Language = "en-GB", IsDefaultForContext = true
         });
 
         Assert.That(created.Id, Is.GreaterThan(0));
@@ -81,14 +82,14 @@ public class IdentityProfileRepositoryTests
 
         var created = await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto
         {
-            DisplayName = "Alice (Work)", Context = "Work", Language = "en-GB", IsDefaultForContext = false
+            DisplayName = "Alice (Work)", Context = IdentityContext.Legal, Language = "en-GB", IsDefaultForContext = false
         });
 
         var before = await db.IdentityProfiles.AsNoTracking().FirstAsync(x => x.Id == created.Id);
         var updated = await repo.UpdateProfileAsync(created.Id, new UpdateIdentityProfileDto
         {
             DisplayName = "Alice W",
-            Context = "Work",
+            Context = IdentityContext.Legal,
             Language = "nb-NO",
             IsDefaultForContext = true
         });
@@ -111,7 +112,7 @@ public class IdentityProfileRepositoryTests
         var factory = new IdentityProfileFactory();
         var repo = new IdentityProfileRepository(db, factory);
 
-        var created = await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "X", Context = "Work" });
+        var created = await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "X", Context = IdentityContext.Legal });
         var ok = await repo.DeleteProfileAsync(created.Id);
 
         Assert.That(ok, Is.True);
@@ -130,17 +131,17 @@ public class IdentityProfileRepositoryTests
         var repo = new IdentityProfileRepository(db, factory);
 
         // Different contexts and defaults to exercise ordering
-        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "B", Context = "Work", IsDefaultForContext = false });
-        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "A", Context = "Work", IsDefaultForContext = true });
-        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "Z", Context = "Social", IsDefaultForContext = false });
+        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "B", Context = IdentityContext.Legal, IsDefaultForContext = false });
+        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "A", Context = IdentityContext.Legal, IsDefaultForContext = true });
+        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "Z", Context = IdentityContext.Social, IsDefaultForContext = false });
 
         var list = await repo.GetProfilesByPersonAsync(person.Id);
-        // Expect Social first (alphabetically), then Work. Within Work: default first, then by DisplayName.
-        Assert.That(list.Select(x => (x.Context, x.DisplayName)).ToList(), Is.EqualTo(new List<(string, string)>
+        
+        Assert.That(list.Select(x => (x.Context, x.DisplayName)).ToList(), Is.EqualTo(new List<(IdentityContext, string)>
         {
-            ("Social", "Z"),
-            ("Work", "A"),
-            ("Work", "B"),
+            (IdentityContext.Legal, "A"),
+            (IdentityContext.Legal, "B"),
+            (IdentityContext.Social, "Z"),
         }));
     }
 }
