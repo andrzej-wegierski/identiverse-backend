@@ -92,4 +92,48 @@ public class PersonServiceTests
         Assert.That(await sut.DeletePersonAsync(1), Is.True);
         Assert.That(await sut.DeletePersonAsync(2), Is.False);
     }
+    
+    [Test]
+    public async Task CreatePersonForUserAsync_Creates_And_Links_User()
+    {
+        var users = new Mock<IUserRepository>();
+        var input = new CreatePersonDto { FirstName = "John", LastName = "Doe" };
+        var created = new PersonDto { Id = 123, FirstName = "John", LastName = "Doe" };
+        _repo.Setup(r => r.CreatePersonAsync(input, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(created);
+        users.Setup(u => u.SetPersonIdAsync(5, 123, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var sut = new PersonService(_repo.Object, users.Object);
+        var result = await sut.CreatePersonForUserAsync(5, input);
+
+        Assert.That(result, Is.SameAs(created));
+        _repo.Verify(r => r.CreatePersonAsync(input, It.IsAny<CancellationToken>()), Times.Once);
+        users.Verify(u => u.SetPersonIdAsync(5, 123, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public void CreatePersonForUserAsync_Without_UserRepository_Throws()
+    {
+        var input = new CreatePersonDto { FirstName = "A", LastName = "B" };
+        _repo.Setup(r => r.CreatePersonAsync(input, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PersonDto { Id = 1 });
+
+        var sut = new PersonService(_repo.Object);
+        Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.CreatePersonForUserAsync(1, input));
+    }
+
+    [Test]
+    public void CreatePersonForUserAsync_When_Link_Fails_Throws()
+    {
+        var users = new Mock<IUserRepository>();
+        var input = new CreatePersonDto { FirstName = "A", LastName = "B" };
+        _repo.Setup(r => r.CreatePersonAsync(input, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new PersonDto { Id = 7 });
+        users.Setup(u => u.SetPersonIdAsync(9, 7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var sut = new PersonService(_repo.Object, users.Object);
+        Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.CreatePersonForUserAsync(9, input));
+    }
 }

@@ -131,4 +131,91 @@ public class UserRepositoryTests
             scope.conn.Dispose();
         }
     }
+
+    [Test]
+    public async Task SetPersonIdAsync_Returns_False_When_User_Not_Found()
+    {
+        var scope = CreateRepo();
+        try
+        {
+            // no users in DB
+            var ok = await scope.repo.SetPersonIdAsync(999, 1);
+            Assert.That(ok, Is.False);
+        }
+        finally
+        {
+            scope.db.Dispose();
+            scope.conn.Dispose();
+        }
+    }
+
+    [Test]
+    public async Task SetPersonIdAsync_Sets_And_Persists_PersonId()
+    {
+        var scope = CreateRepo();
+        try
+        {
+            // Arrange: create person and user
+            var person = new Person
+            {
+                ExternalId = Guid.NewGuid(),
+                FirstName = "John",
+                LastName = "Doe",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            scope.db.Persons.Add(person);
+            await scope.db.SaveChangesAsync();
+
+            var user = new User { Username = "u-set", Email = "u@set.com", Role = UserRole.User, PasswordHash = "h", PasswordSalt = "s" };
+            scope.db.Users.Add(user);
+            await scope.db.SaveChangesAsync();
+
+            // Act
+            var ok = await scope.repo.SetPersonIdAsync(user.Id, person.Id);
+
+            // Assert
+            Assert.That(ok, Is.True);
+            var reloaded = await scope.db.Users.AsNoTracking().FirstAsync(u => u.Id == user.Id);
+            Assert.That(reloaded.PersonId, Is.EqualTo(person.Id));
+        }
+        finally
+        {
+            scope.db.Dispose();
+            scope.conn.Dispose();
+        }
+    }
+
+    [Test]
+    public async Task SetPersonIdAsync_Is_Idempotent_When_Same_Value()
+    {
+        var scope = CreateRepo();
+        try
+        {
+            var person = new Person
+            {
+                ExternalId = Guid.NewGuid(),
+                FirstName = "Jane",
+                LastName = "Doe",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            scope.db.Persons.Add(person);
+            await scope.db.SaveChangesAsync();
+
+            var user = new User { Username = "u-idem", Email = "u@idem.com", Role = UserRole.User, PasswordHash = "h", PasswordSalt = "s", PersonId = person.Id };
+            scope.db.Users.Add(user);
+            await scope.db.SaveChangesAsync();
+
+            var ok = await scope.repo.SetPersonIdAsync(user.Id, person.Id);
+            Assert.That(ok, Is.True);
+            var reloaded = await scope.db.Users.AsNoTracking().FirstAsync(u => u.Id == user.Id);
+            Assert.That(reloaded.PersonId, Is.EqualTo(person.Id));
+        }
+        finally
+        {
+            scope.db.Dispose();
+            scope.conn.Dispose();
+        }
+    }
 }

@@ -70,4 +70,18 @@ public class UserRepository : IUserRepository
 
     public Task<bool> IsEmailTakenAsync(string email, CancellationToken ct = default)
         => _db.Users.AnyAsync(p => p.Email == email, ct);
+
+    public async Task<bool> SetPersonIdAsync(int userId, int personId, CancellationToken ct = default)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null)
+            return false;
+        
+        if (user.PersonId == personId)
+            return true;
+
+        user.PersonId = personId;
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
 }

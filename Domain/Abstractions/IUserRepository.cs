@@ -15,4 +15,6 @@ public interface IUserRepository
     Task<bool> IsUsernameTakenAsync(string username, CancellationToken ct = default);
     Task<bool> IsEmailTakenAsync(string email, CancellationToken ct = default);
     
+    Task<bool> SetPersonIdAsync(int userId, int personId, CancellationToken ct = default);
+    
 }

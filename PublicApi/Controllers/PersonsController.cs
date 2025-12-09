@@ -55,7 +55,7 @@ public class PersonsController : ControllerBase
         if (user.PersonId is not null)
             return Conflict("User already has a person");
         
-        var created = await _service.CreatePersonAsync(request, ct);
+        var created = await _service.CreatePersonForUserAsync(user.UserId, request, ct);
         return CreatedAtAction(nameof(GetPersonById), new {id = created.Id}, created);
     }
 
