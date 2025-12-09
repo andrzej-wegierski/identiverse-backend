@@ -1,6 +1,7 @@
 using Database.DependencyInjection;
 using Domain.DependencyInjection;
 using identiverse_backend.Extensions;
+using identiverse_backend.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
@@ -21,6 +22,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 
