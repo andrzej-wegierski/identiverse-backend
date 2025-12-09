@@ -17,6 +17,13 @@ public class UserRepository : IUserRepository
         _factory = factory;
     }
 
+    public Task<List<UserDto>> GetAllAsync(CancellationToken ct = default)
+    {
+        return  _db.Users.AsNoTracking()
+            .Select(u => _factory.ToDto(u))
+            .ToListAsync(ct);
+    }
+
     public async Task<UserDto?> GetByIdAsync(int id, CancellationToken ct = default)
     {
         var entity = await _db.Users.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id, ct);

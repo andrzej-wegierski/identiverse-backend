@@ -4,6 +4,7 @@ namespace Domain.Abstractions;
 
 public interface IUserRepository
 {
+    Task<List<UserDto>> GetAllAsync(CancellationToken ct = default);
     Task<UserDto?> GetByIdAsync(int id, CancellationToken ct = default);
     Task<UserDto?> GetByUsernameAsync(string username, CancellationToken ct = default);
     Task<UserDto?> GetByEmailAsync(string email, CancellationToken ct = default);
