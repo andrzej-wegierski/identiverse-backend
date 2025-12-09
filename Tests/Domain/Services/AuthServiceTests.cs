@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Cryptography;
 using System.Text;
 using Domain.Abstractions;
+using Domain.Enums;
 using Domain.Exceptions;
 using Domain.Models;
 using Domain.Services;
@@ -47,7 +48,7 @@ public class AuthServiceTests
 
         repo.Setup(r => r.GetByIdAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(new UserDto
         {
-            Id = 10, Username = "newuser", Email = "new@user.com", Role = "User", PersonId = null
+            Id = 10, Username = "newuser", Email = "new@user.com", Role = UserRole.User, PersonId = null
         });
 
         var sut = CreateSut(repo);
@@ -88,7 +89,7 @@ public class AuthServiceTests
         // Use the same hashing as service uses
         var hash = Convert.ToBase64String(Rfc2898DeriveBytes.Pbkdf2(password, salt, 100_000, HashAlgorithmName.SHA256, 32));
 
-        var user = new UserDto { Id = 5, Username = "user", Email = "u@e.com", Role = "Admin", PersonId = 12 };
+        var user = new UserDto { Id = 5, Username = "user", Email = "u@e.com", Role = UserRole.Admin, PersonId = 12 };
         repo.Setup(r => r.GetAuthByUserNameOrEmailAsync("user", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AuthUserData
             {
@@ -127,7 +128,7 @@ public class AuthServiceTests
         var hash = Convert.ToBase64String(Rfc2898DeriveBytes.Pbkdf2("correct", salt, 100_000, HashAlgorithmName.SHA256, 32));
         repo.Setup(r => r.GetAuthByUserNameOrEmailAsync("user", It.IsAny<CancellationToken>())).ReturnsAsync(new AuthUserData
         {
-            User = new UserDto { Id = 1, Username = "user", Email = "e@e.com", Role = "User" },
+            User = new UserDto { Id = 1, Username = "user", Email = "e@e.com", Role = UserRole.User },
             PasswordHash = hash,
             PasswordSalt = Convert.ToBase64String(salt)
         });

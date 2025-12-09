@@ -75,4 +75,23 @@ public class CurrentUserServiceTests
         Assert.That(cu.Role, Is.EqualTo("User"));
         Assert.That(cu.PersonId, Is.EqualTo(99));
     }
+
+    [Test]
+    public void GetCurrentUser_Parses_PersonId_Ignoring_Case()
+    {
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, "21"),
+            new Claim(ClaimTypes.Name, "bob"),
+            new Claim(ClaimTypes.Role, "User"),
+            new Claim("PersonId", "123") // different casing
+        };
+        var principal = CreatePrincipal(true, claims);
+        var accessor = new HttpContextAccessor { HttpContext = CreateContext(principal) };
+        var svc = new CurrentUserService(accessor);
+        var cu = svc.GetCurrentUser();
+        Assert.That(cu, Is.Not.Null);
+        Assert.That(cu!.UserId, Is.EqualTo(21));
+        Assert.That(cu.PersonId, Is.EqualTo(123));
+    }
 }

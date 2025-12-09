@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Domain.Enums;
 
 namespace Domain.Models;
 
@@ -7,7 +8,7 @@ public class UserDto
     public int Id { get; init; }
     public string Username { get; init; } = string.Empty;
     public string Email { get; init; } = string.Empty;
-    public string Role { get; init; } = "User";
+    public UserRole Role { get; init; } = UserRole.User;
     public int? PersonId { get; init; }
 }
 

@@ -1,4 +1,5 @@
 using Domain.Abstractions;
+using Domain.Enums;
 using Domain.Models;
 using Domain.Services;
 using identiverse_backend.Controllers;
@@ -17,7 +18,7 @@ public class AdminControllerTests
     [Test]
     public async Task GetAllUsers_Returns_Ok_With_List()
     {
-        var list = new List<UserDto> { new() { Id = 1, Username = "u", Email = "e@e.com", Role = "User" } };
+        var list = new List<UserDto> { new() { Id = 1, Username = "u", Email = "e@e.com", Role = UserRole.User } };
         _users.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(list);
         var controller = CreateSut();
         var action = await controller.GetAllusers();

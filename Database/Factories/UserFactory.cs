@@ -1,4 +1,5 @@
 using Database.Entities;
+using Domain.Enums;
 using Domain.Models;
 
 namespace Database.Factories;
@@ -36,7 +37,7 @@ public class UserFactory : IUserFactory
         Email = dto.Email,
         PasswordHash = Convert.ToBase64String(hash),
         PasswordSalt = Convert.ToBase64String(salt),
-        Role = "User",
+        Role = UserRole.User,
         PersonId = dto.PersonId,
         CreatedAt = DateTime.UtcNow,
         UpdatedAt = DateTime.UtcNow

@@ -44,7 +44,8 @@ public sealed class CurrentUserService(IHttpContextAccessor accessor) : ICurrent
         var role = principal.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
 
         int? personId = null;
-        var personIdRaw = principal.FindFirstValue("personId");
+        var personIdRaw = FindFirstValueIgnoreCase(principal, "personId")
+                           ?? FindFirstValueIgnoreCase(principal, "person_id");
         if (int.TryParse(personIdRaw, out var pid))
             personId = pid;
 
@@ -55,6 +56,12 @@ public sealed class CurrentUserService(IHttpContextAccessor accessor) : ICurrent
             Role = role,
             PersonId = personId
         };
+    }
+
+    private static string? FindFirstValueIgnoreCase(ClaimsPrincipal principal, string type)
+    {
+        var claim = principal.Claims.FirstOrDefault(c => string.Equals(c.Type, type, StringComparison.OrdinalIgnoreCase));
+        return claim?.Value;
     }
 
     

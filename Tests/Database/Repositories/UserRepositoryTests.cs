@@ -2,6 +2,7 @@ using Database;
 using Database.Entities;
 using Database.Factories;
 using Database.Repositories;
+using Domain.Enums;
 using Domain.Models;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -42,7 +43,7 @@ public class UserRepositoryTests
             Assert.That(saved, Is.Not.Null);
             Assert.That(saved!.Username, Is.EqualTo("u1"));
             Assert.That(saved.Email, Is.EqualTo("u1@x.com"));
-            Assert.That(saved.Role, Is.EqualTo("User"));
+            Assert.That(saved.Role, Is.EqualTo(UserRole.User));
             Assert.That(saved.PasswordHash, Is.Not.Empty);
             Assert.That(saved.PasswordSalt, Is.Not.Empty);
         }
@@ -59,7 +60,7 @@ public class UserRepositoryTests
         var scope = CreateRepo();
         try
         {
-            scope.db.Users.Add(new User { Username = "a", Email = "a@a.com", Role = "User", PasswordHash = "h", PasswordSalt = "s" });
+            scope.db.Users.Add(new User { Username = "a", Email = "a@a.com", Role = UserRole.User, PasswordHash = "h", PasswordSalt = "s" });
             await scope.db.SaveChangesAsync();
 
             var dto = await scope.repo.GetByIdAsync(1);
@@ -80,7 +81,7 @@ public class UserRepositoryTests
         var scope = CreateRepo();
         try
         {
-            scope.db.Users.Add(new User { Username = "bob", Email = "b@b.com", Role = "User", PasswordHash = "h", PasswordSalt = "s" });
+            scope.db.Users.Add(new User { Username = "bob", Email = "b@b.com", Role = UserRole.User, PasswordHash = "h", PasswordSalt = "s" });
             await scope.db.SaveChangesAsync();
 
             var authByUser = await scope.repo.GetAuthByUserNameOrEmailAsync("bob");
@@ -101,7 +102,7 @@ public class UserRepositoryTests
         var scope = CreateRepo();
         try
         {
-            scope.db.Users.Add(new User { Username = "x", Email = "x@x.com", Role = "User", PasswordHash = "h", PasswordSalt = "s" });
+            scope.db.Users.Add(new User { Username = "x", Email = "x@x.com", Role = UserRole.User, PasswordHash = "h", PasswordSalt = "s" });
             await scope.db.SaveChangesAsync();
             Assert.That(await scope.repo.IsUsernameTakenAsync("x"), Is.True);
             Assert.That(await scope.repo.IsUsernameTakenAsync("y"), Is.False);
@@ -119,7 +120,7 @@ public class UserRepositoryTests
         var scope = CreateRepo();
         try
         {
-            scope.db.Users.Add(new User { Username = "x2", Email = "x2@x.com", Role = "User", PasswordHash = "h", PasswordSalt = "s" });
+            scope.db.Users.Add(new User { Username = "x2", Email = "x2@x.com", Role = UserRole.User, PasswordHash = "h", PasswordSalt = "s" });
             await scope.db.SaveChangesAsync();
             Assert.That(await scope.repo.IsEmailTakenAsync("x2@x.com"), Is.True);
             Assert.That(await scope.repo.IsEmailTakenAsync("no@x.com"), Is.False);

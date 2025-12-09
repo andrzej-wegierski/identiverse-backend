@@ -1,3 +1,4 @@
+using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,7 +13,7 @@ public class User
     public string PasswordHash { get; set; } = string.Empty;
     public string PasswordSalt { get; set; } = string.Empty;
     
-    public string Role { get; set; } = "User";
+    public UserRole Role { get; set; } = UserRole.User;
     
     public int? PersonId { get; set; }
     public Person? Person { get; set; }
@@ -32,7 +33,7 @@ public class UserEntityConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Email).IsRequired().HasMaxLength(200);
         builder.Property(u => u.PasswordHash).IsRequired();
         builder.Property(u => u.PasswordSalt).IsRequired();
-        builder.Property(u => u.Role).IsRequired().HasMaxLength(20);
+        builder.Property(u => u.Role).HasConversion<string>().IsRequired().HasMaxLength(20);
         builder.Property(u => u.CreatedAt).IsRequired();
         builder.Property(u => u.UpdatedAt).IsRequired();
         

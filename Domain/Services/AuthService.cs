@@ -78,7 +78,7 @@ public class AuthService : IAuthService
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(ClaimTypes.Name, user.Username),
-            new(ClaimTypes.Role, user.Role)
+            new(ClaimTypes.Role, user.Role.ToString())
         };
 
         if (user.PersonId.HasValue)

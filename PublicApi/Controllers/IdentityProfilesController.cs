@@ -34,11 +34,10 @@ public class IdentityProfilesController : ControllerBase
     public async Task<ActionResult<IdentityProfileDto>> GetProfileById(int id, CancellationToken ct)
     {
         var dto = await _service.GetProfileByIdAsync(id, ct);
-        // Return 404 when profile not found (previously forgot to return)
         if (dto is null)
             return NotFound();
         
-        if (dto != null && !AuthorizationHelpers.CanAccessPerson(_user, dto.PersonId))
+        if (!AuthorizationHelpers.CanAccessPerson(_user, dto.PersonId))
             return Forbid();
         
         return Ok(dto);
