@@ -7,6 +7,9 @@ using identiverse_backend.Services;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
+// CORS for frontend dev app (extracted to extension)
+builder.Services.AddFrontendCors();
+
 builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddDomain();
 
@@ -30,6 +33,8 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
+
+app.UseCors("identiverse-frontend");
 
 app.UseAuthenticationAndAuthorization();
 
