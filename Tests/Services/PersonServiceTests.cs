@@ -8,7 +8,8 @@ namespace Tests.Services;
 public class PersonServiceTests
 {
     private readonly Mock<IPersonRepository> _repo = new();
-    private PersonService CreateSut() => new(_repo.Object);
+    private readonly Mock<IUserRepository> _users = new();
+    private PersonService CreateSut() => new(_repo.Object, _users.Object);
 
     [Test]
     public async Task GetPersonsAsync_Returns_List_From_Repo()
@@ -119,7 +120,7 @@ public class PersonServiceTests
         _repo.Setup(r => r.CreatePersonAsync(input, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PersonDto { Id = 1 });
 
-        var sut = new PersonService(_repo.Object);
+        var sut = new PersonService(_repo.Object, _users.Object);
         Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.CreatePersonForUserAsync(1, input));
     }
 

@@ -24,14 +24,6 @@ public class PersonService : IPersonService
         _users = users;
     }
 
-    // Backwards-compatible constructor for tests that don't need user linking
-    public PersonService(IPersonRepository repo)
-    {
-        _repo = repo;
-        _users = null;
-    }
-
-
     public Task<List<PersonDto>> GetPersonsAsync(CancellationToken ct = default)
         => _repo.GetPersonsAsync(ct);
 
