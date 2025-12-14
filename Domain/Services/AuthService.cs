@@ -104,9 +104,6 @@ public class AuthService : IAuthService
             new(ClaimTypes.Name, user.Username),
             new(ClaimTypes.Role, user.Role.ToString())
         };
-
-        if (user.PersonId.HasValue)
-            claims.Add(new("personId", user.PersonId.Value.ToString()));
         
         var expires = DateTime.UtcNow.AddMinutes(_jwt.ExpiryMinutes);
 

@@ -1,4 +1,5 @@
 using Database.DependencyInjection;
+using Domain.Abstractions;
 using Domain.DependencyInjection;
 using identiverse_backend.Extensions;
 using identiverse_backend.Middleware;
@@ -17,6 +18,7 @@ builder.Services.AddAuthenticationAndAuthorization(builder.Configuration);
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<ICurrentUserContext, CurrentUserService>();
 
 builder.Services.AddSwagger();
 

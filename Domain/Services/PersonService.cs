@@ -16,7 +16,7 @@ public interface IPersonService
 public class PersonService : IPersonService
 {
     private readonly IPersonRepository _repo;
-    private readonly IUserRepository? _users;
+    private readonly IUserRepository _users;
 
     public PersonService(IPersonRepository repo, IUserRepository users)
     {

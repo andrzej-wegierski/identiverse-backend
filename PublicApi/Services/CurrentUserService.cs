@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Domain.Abstractions;
 
 namespace identiverse_backend.Services;
 
@@ -14,10 +15,9 @@ public sealed class CurrentUser
     public int UserId { get; init; }
     public string Username { get; init; } = string.Empty;
     public string Role { get; init; } = string.Empty;
-    public int? PersonId { get; init; }
 }
 
-public sealed class CurrentUserService(IHttpContextAccessor accessor) : ICurrentUserService
+public sealed class CurrentUserService(IHttpContextAccessor accessor) : ICurrentUserService, ICurrentUserContext
 {
     public bool IsAuthenticated => accessor.HttpContext?.User.Identity?.IsAuthenticated == true;
 
@@ -30,31 +30,39 @@ public sealed class CurrentUserService(IHttpContextAccessor accessor) : ICurrent
         }
     }
     
+    public int UserId
+    {
+        get
+        {
+            var principal = accessor.HttpContext?.User;
+            if (principal?.Identity?.IsAuthenticated != true)
+                throw new InvalidOperationException("User is not authenticated");
+            
+            var sub = principal.FindFirstValue("sub") ?? principal.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(sub, out var userId))
+                throw new InvalidOperationException("Missing or invalid 'sub' claim");
+            return userId;
+        }
+    }
+
     public CurrentUser? GetCurrentUser()
     {
         var principal = accessor.HttpContext?.User;
         if (principal?.Identity?.IsAuthenticated != true)
             return null;
-        
-        var sub = principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? principal.FindFirstValue("sub");
+
+        var sub = principal.FindFirstValue("sub") ?? principal.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!int.TryParse(sub, out var userId))
             return null;
-        
+
         var username = principal.FindFirstValue(ClaimTypes.Name) ?? string.Empty;
         var role = principal.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
-
-        int? personId = null;
-        var personIdRaw = FindFirstValueIgnoreCase(principal, "personId")
-                           ?? FindFirstValueIgnoreCase(principal, "person_id");
-        if (int.TryParse(personIdRaw, out var pid))
-            personId = pid;
 
         return new CurrentUser
         {
             UserId = userId,
             Username = username,
-            Role = role,
-            PersonId = personId
+            Role = role
         };
     }
 
@@ -63,7 +71,4 @@ public sealed class CurrentUserService(IHttpContextAccessor accessor) : ICurrent
         var claim = principal.Claims.FirstOrDefault(c => string.Equals(c.Type, type, StringComparison.OrdinalIgnoreCase));
         return claim?.Value;
     }
-
-    
-    
 }
