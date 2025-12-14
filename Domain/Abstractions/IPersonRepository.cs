@@ -9,4 +9,5 @@ public interface IPersonRepository
     Task<PersonDto> CreatePersonAsync(CreatePersonDto dto, CancellationToken ct = default);
     Task<PersonDto?> UpdatePersonAsync(int id, UpdatePersonDto person, CancellationToken ct = default);
     Task<bool> DeletePersonAsync(int id, CancellationToken ct = default);
+    Task<int?> GetUserIdByPersonIdAsync(int personId, CancellationToken ct = default);
 }

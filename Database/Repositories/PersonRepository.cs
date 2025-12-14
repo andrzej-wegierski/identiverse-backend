@@ -58,4 +58,12 @@ public class PersonRepository : IPersonRepository
         await _db.SaveChangesAsync(ct);
         return true;
     }
+
+    public async Task<int?> GetUserIdByPersonIdAsync(int personId, CancellationToken ct = default)
+    {
+        return await _db.Users
+            .Where(u => u.PersonId == personId)
+            .Select(u => u.Id)
+            .FirstOrDefaultAsync(ct);
+    }
 }

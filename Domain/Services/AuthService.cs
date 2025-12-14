@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using Domain.Exceptions;
+using Microsoft.VisualBasic.CompilerServices;
 
 namespace Domain.Services;
 
@@ -14,33 +15,39 @@ public interface IAuthService
 {
     Task<AuthResponseDto> RegisterAsync(RegisterUserDto user, CancellationToken ct = default);
     Task<AuthResponseDto> LoginAsync(LoginUserDto user, CancellationToken ct = default);
+    Task<bool> CanAccessPersonAsync(int userId, bool isAdmin, int personId, CancellationToken ct = default);
+    Task<bool> CanAccessIdentityProfileAsync(int userId, bool isAdmin, int profileId, CancellationToken ct = default);
 }
 
 public class AuthService : IAuthService
 {
-    private readonly IUserRepository _repo;
+    private readonly IUserRepository _users;
+    private readonly IIdentityProfileRepository _profiles;
+    private readonly IPersonRepository _persons;
     private readonly JwtOptions _jwt;
 
-    public AuthService(IUserRepository repo, IOptions<JwtOptions> jwtOptions)
+    public AuthService(IUserRepository users, IOptions<JwtOptions> jwtOptions, IIdentityProfileRepository profiles, IPersonRepository persons)
     {
-        _repo = repo;
+        _users = users;
+        _profiles = profiles;
+        _persons = persons;
         _jwt = jwtOptions.Value;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterUserDto user, CancellationToken ct = default)
     {
-        if (await _repo.IsUsernameTakenAsync(user.Username, ct))
+        if (await _users.IsUsernameTakenAsync(user.Username, ct))
             throw new ConflictException("Username is already taken");
         
-        if (await _repo.IsEmailTakenAsync(user.Email, ct))
+        if (await _users.IsEmailTakenAsync(user.Email, ct))
             throw new ConflictException("Email is already registered");
         
         var salt = RandomNumberGenerator.GetBytes(16);
         var hash = HashPassword(user.Password, salt);
 
-        var newUserId = await _repo.RegisterUserAsync(user, hash, salt, ct);
+        var newUserId = await _users.RegisterUserAsync(user, hash, salt, ct);
 
-        var userDto = await _repo.GetByIdAsync(newUserId, ct) ??
+        var userDto = await _users.GetByIdAsync(newUserId, ct) ??
                       throw new NotFoundException("User not found after create");
         
         return CreateAuthResponse(userDto);
@@ -48,7 +55,7 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> LoginAsync(LoginUserDto user, CancellationToken ct = default)
     {
-        var auth = await _repo.GetAuthByUserNameOrEmailAsync(user.UsernameOrEmail, ct);
+        var auth = await _users.GetAuthByUserNameOrEmailAsync(user.UsernameOrEmail, ct);
         if (auth is null)
             throw new UnauthorizedIdentiverseException("Invalid credentials");
         
@@ -61,7 +68,24 @@ public class AuthService : IAuthService
         
         return CreateAuthResponse(auth.User);
     }
-    
+
+    public async Task<bool> CanAccessPersonAsync(int userId, bool isAdmin, int personId, CancellationToken ct = default)
+    {
+        if (isAdmin) return true;
+        var ownerUserId = await _persons.GetUserIdByPersonIdAsync(personId, ct);
+        return ownerUserId.HasValue && ownerUserId.Value == userId;
+    }
+
+    public async Task<bool> CanAccessIdentityProfileAsync(int userId, bool isAdmin, int profileId, CancellationToken ct = default)
+    {
+        if (isAdmin) return true;
+        var personId = await _profiles.GetPersonIdByProfileIdAsync(profileId, ct);
+        if (!personId.HasValue) return false;
+        var ownerUserId = await _persons.GetUserIdByPersonIdAsync(personId.Value, ct);
+        return ownerUserId.HasValue && ownerUserId.Value == userId;
+        
+    }
+
     private static byte[] HashPassword(string password, byte[] salt)
     {
         const int iterations = 100_000; 

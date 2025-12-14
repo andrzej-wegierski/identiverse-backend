@@ -9,4 +9,5 @@ public interface IIdentityProfileRepository
     Task<IdentityProfileDto> CreateProfileAsync(int personId, CreateIdentityProfileDto dto, CancellationToken ct = default);
     Task<IdentityProfileDto?> UpdateProfileAsync(int id, UpdateIdentityProfileDto dto, CancellationToken ct = default);
     Task<bool> DeleteProfileAsync(int id, CancellationToken ct = default);
+    Task<int?> GetPersonIdByProfileIdAsync(int profileId, CancellationToken ct = default);
 }

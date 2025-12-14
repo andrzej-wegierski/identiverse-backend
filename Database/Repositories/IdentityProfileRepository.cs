@@ -65,4 +65,12 @@ public class IdentityProfileRepository : IIdentityProfileRepository
         await _db.SaveChangesAsync(ct);
         return true;
     }
+
+    public async Task<int?> GetPersonIdByProfileIdAsync(int profileId, CancellationToken ct = default)
+    {
+        return await _db.IdentityProfiles
+            .Where(p => p.Id == profileId)
+            .Select(p => p.PersonId)
+            .FirstOrDefaultAsync(ct);
+    }
 }
