@@ -21,7 +21,7 @@ public class AdminController : ControllerBase
     }
 
     [HttpGet("users")]
-    public async Task<ActionResult<List<UserDto>>> GetAllusers(CancellationToken ct = default)
+    public async Task<ActionResult<List<UserDto>>> GetAllUsers(CancellationToken ct = default)
     {
         var list = await _users.GetAllAsync(ct);
         return Ok(list);

@@ -7,7 +7,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using Domain.Exceptions;
-using Microsoft.VisualBasic.CompilerServices;
 
 namespace Domain.Services;
 
@@ -121,5 +120,6 @@ public class AuthService : IAuthService
             Expires = expires,
             User = user
         };
-    } 
+    }
+
 }

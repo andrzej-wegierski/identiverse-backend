@@ -18,28 +18,45 @@ public interface IIdentityProfileService
 public class IdentityProfileService : IIdentityProfileService
 {
     private readonly IIdentityProfileRepository _repo;
+    private readonly IAccessControllService _access;
 
-    public IdentityProfileService(IIdentityProfileRepository repo)
+    public IdentityProfileService(IIdentityProfileRepository repo, IAccessControllService access)
     {
         _repo = repo;
+        _access = access;
     }
 
 
-    public Task<List<IdentityProfileDto>> GetProfilesByPersonAsync(int personId, CancellationToken ct = default)
-        => _repo.GetProfilesByPersonAsync(personId, ct);
+    public async Task<List<IdentityProfileDto>> GetProfilesByPersonAsync(int personId, CancellationToken ct = default)
+    {
+        await _access.CanAccessPersonAsync(personId, ct);
+        return await _repo.GetProfilesByPersonAsync(personId, ct);
+    }
 
-    public Task<IdentityProfileDto?> GetProfileByIdAsync(int id, CancellationToken ct = default)
-        => _repo.GetProfileByIdAsync(id, ct);
+    public async Task<IdentityProfileDto?> GetProfileByIdAsync(int id, CancellationToken ct = default)
+    {
+        await _access.EnsureCanAccessProfileAsync(id, ct);
+        return await _repo.GetProfileByIdAsync(id, ct);
+    }
 
-    public  Task<IdentityProfileDto> CreateProfileAsync(int personId, CreateIdentityProfileDto dto,
+    public  async Task<IdentityProfileDto> CreateProfileAsync(int personId, CreateIdentityProfileDto dto,
         CancellationToken ct = default)
-        => _repo.CreateProfileAsync(personId, dto, ct);
+    {
+        await _access.CanAccessPersonAsync(personId, ct);
+        return await _repo.CreateProfileAsync(personId, dto, ct);
+    }
 
-    public Task<IdentityProfileDto?> UpdateProfileAsync(int id, UpdateIdentityProfileDto dto, CancellationToken ct = default)
-        => _repo.UpdateProfileAsync(id, dto, ct);
+    public async Task<IdentityProfileDto?> UpdateProfileAsync(int id, UpdateIdentityProfileDto dto, CancellationToken ct = default)
+    {
+        await _access.EnsureCanAccessProfileAsync(id, ct);
+        return await _repo.UpdateProfileAsync(id, dto, ct);
+    }
 
-    public Task<bool> DeleteProfileAsync(int id, CancellationToken ct = default)
-        => _repo.DeleteProfileAsync(id, ct);
+    public async Task<bool> DeleteProfileAsync(int id, CancellationToken ct = default)
+    {
+        await _access.EnsureCanAccessProfileAsync(id, ct);
+        return await _repo.DeleteProfileAsync(id, ct);
+    }
 
     public async Task<IdentityProfileDto?> GetPreferredProfileAsync(
         int personId, 
@@ -47,6 +64,7 @@ public class IdentityProfileService : IIdentityProfileService
         string? language = null, 
         CancellationToken ct = default)
     {
+        await _access.CanAccessPersonAsync(personId, ct);
         var profiles = await _repo.GetProfilesByPersonAsync(personId, ct);
 
         var sameContext = profiles
