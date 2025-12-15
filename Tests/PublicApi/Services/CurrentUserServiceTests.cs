@@ -56,14 +56,13 @@ public class CurrentUserServiceTests
     }
 
     [Test]
-    public void GetCurrentUser_Parses_UserId_Username_Role_And_PersonId_Correctly()
+    public void GetCurrentUser_Parses_UserId_Username_And_Role_Correctly()
     {
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, "15"),
             new Claim(ClaimTypes.Name, "alice"),
-            new Claim(ClaimTypes.Role, "User"),
-            new Claim("personId", "99")
+            new Claim(ClaimTypes.Role, "User")
         };
         var principal = CreatePrincipal(true, claims);
         var accessor = new HttpContextAccessor { HttpContext = CreateContext(principal) };
@@ -73,18 +72,18 @@ public class CurrentUserServiceTests
         Assert.That(cu!.UserId, Is.EqualTo(15));
         Assert.That(cu.Username, Is.EqualTo("alice"));
         Assert.That(cu.Role, Is.EqualTo("User"));
-        Assert.That(cu.PersonId, Is.EqualTo(99));
+        // No PersonId is exposed anymore; this is resolved from DB when needed
     }
 
     [Test]
-    public void GetCurrentUser_Parses_PersonId_Ignoring_Case()
+    public void GetCurrentUser_Ignores_Unstable_PersonId_Claim()
     {
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, "21"),
             new Claim(ClaimTypes.Name, "bob"),
             new Claim(ClaimTypes.Role, "User"),
-            new Claim("PersonId", "123") // different casing
+            new Claim("PersonId", "123") // should be ignored
         };
         var principal = CreatePrincipal(true, claims);
         var accessor = new HttpContextAccessor { HttpContext = CreateContext(principal) };
@@ -92,6 +91,7 @@ public class CurrentUserServiceTests
         var cu = svc.GetCurrentUser();
         Assert.That(cu, Is.Not.Null);
         Assert.That(cu!.UserId, Is.EqualTo(21));
-        Assert.That(cu.PersonId, Is.EqualTo(123));
+        Assert.That(cu.Username, Is.EqualTo("bob"));
+        Assert.That(cu.Role, Is.EqualTo("User"));
     }
 }

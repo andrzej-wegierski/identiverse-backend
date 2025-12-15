@@ -21,7 +21,7 @@ public class AdminControllerTests
         var list = new List<UserDto> { new() { Id = 1, Username = "u", Email = "e@e.com", Role = UserRole.User } };
         _users.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(list);
         var controller = CreateSut();
-        var action = await controller.GetAllusers();
+        var action = await controller.GetAllUsers();
         Assert.That(action.Result, Is.InstanceOf<OkObjectResult>());
         var ok = (OkObjectResult)action.Result!;
         Assert.That(ok.Value, Is.SameAs(list));

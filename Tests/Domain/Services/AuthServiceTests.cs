@@ -25,7 +25,11 @@ public class AuthServiceTests
     }
 
     private static AuthService CreateSut(Mock<IUserRepository> repo)
-        => new(repo.Object, CreateJwtOptions());
+    {
+        var profiles = new Mock<IIdentityProfileRepository>();
+        var persons = new Mock<IPersonRepository>();
+        return new AuthService(repo.Object, CreateJwtOptions(), profiles.Object, persons.Object);
+    }
 
     [Test]
     public async Task RegisterAsync_Succeeds_With_Unique_Username_And_Email()
@@ -108,7 +112,8 @@ public class AuthServiceTests
         Assert.That(token.Issuer, Is.EqualTo("identiverse.test"));
         Assert.That(token.Audiences, Does.Contain("identiverse.aud"));
         Assert.That(token.Claims.First(c => c.Type == JwtRegisteredClaimNames.Sub).Value, Is.EqualTo("5"));
-        Assert.That(token.Claims.First(c => c.Type == "personId").Value, Is.EqualTo("12"));
+        // Only stable claims expected: sub/name/role. No personId claim.
+        Assert.That(token.Claims.Any(c => c.Type == "personId"), Is.False);
     }
 
     [Test]

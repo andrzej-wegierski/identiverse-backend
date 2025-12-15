@@ -9,7 +9,16 @@ public class PersonServiceTests
 {
     private readonly Mock<IPersonRepository> _repo = new();
     private readonly Mock<IUserRepository> _users = new();
-    private PersonService CreateSut() => new(_repo.Object, _users.Object);
+    private readonly Mock<IAccessControllService> _access = new();
+    private readonly Mock<ICurrentUserContext> _current = new();
+    private PersonService CreateSut()
+    {
+        // Allow all access by default for unit tests unless overridden
+        _access.Setup(a => a.CanAccessPersonAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _current.SetupGet(c => c.UserId).Returns(5);
+        return new PersonService(_repo.Object, _users.Object, _access.Object, _current.Object);
+    }
 
     [Test]
     public async Task GetPersonsAsync_Returns_List_From_Repo()
@@ -93,48 +102,37 @@ public class PersonServiceTests
         Assert.That(await sut.DeletePersonAsync(1), Is.True);
         Assert.That(await sut.DeletePersonAsync(2), Is.False);
     }
-    
+
     [Test]
-    public async Task CreatePersonForUserAsync_Creates_And_Links_User()
+    public async Task CreatePersonForCurrentUserAsync_Creates_And_Links_To_Current_User()
     {
-        var users = new Mock<IUserRepository>();
         var input = new CreatePersonDto { FirstName = "John", LastName = "Doe" };
         var created = new PersonDto { Id = 123, FirstName = "John", LastName = "Doe" };
         _repo.Setup(r => r.CreatePersonAsync(input, It.IsAny<CancellationToken>()))
             .ReturnsAsync(created);
-        users.Setup(u => u.SetPersonIdAsync(5, 123, It.IsAny<CancellationToken>()))
+        _current.SetupGet(c => c.UserId).Returns(5);
+        _users.Setup(u => u.SetPersonIdAsync(5, 123, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var sut = new PersonService(_repo.Object, users.Object);
-        var result = await sut.CreatePersonForUserAsync(5, input);
+        var sut = CreateSut();
+        var result = await sut.CreatePersonForCurrentUserAsync(input);
 
         Assert.That(result, Is.SameAs(created));
         _repo.Verify(r => r.CreatePersonAsync(input, It.IsAny<CancellationToken>()), Times.Once);
-        users.Verify(u => u.SetPersonIdAsync(5, 123, It.IsAny<CancellationToken>()), Times.Once);
+        _users.Verify(u => u.SetPersonIdAsync(5, 123, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
-    public void CreatePersonForUserAsync_Without_UserRepository_Throws()
+    public void CreatePersonForCurrentUserAsync_When_Link_Fails_Throws()
     {
-        var input = new CreatePersonDto { FirstName = "A", LastName = "B" };
-        _repo.Setup(r => r.CreatePersonAsync(input, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PersonDto { Id = 1 });
-
-        var sut = new PersonService(_repo.Object, _users.Object);
-        Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.CreatePersonForUserAsync(1, input));
-    }
-
-    [Test]
-    public void CreatePersonForUserAsync_When_Link_Fails_Throws()
-    {
-        var users = new Mock<IUserRepository>();
         var input = new CreatePersonDto { FirstName = "A", LastName = "B" };
         _repo.Setup(r => r.CreatePersonAsync(input, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PersonDto { Id = 7 });
-        users.Setup(u => u.SetPersonIdAsync(9, 7, It.IsAny<CancellationToken>()))
+        _current.SetupGet(c => c.UserId).Returns(9);
+        _users.Setup(u => u.SetPersonIdAsync(9, 7, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
-        var sut = new PersonService(_repo.Object, users.Object);
-        Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.CreatePersonForUserAsync(9, input));
+        var sut = CreateSut();
+        Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.CreatePersonForCurrentUserAsync(input));
     }
 }

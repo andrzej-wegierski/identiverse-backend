@@ -8,6 +8,16 @@ namespace Tests.Services;
 
 public class IdentityProfileServiceTests
 {
+    private readonly Mock<IAccessControllService> _access = new();
+    private IdentityProfileService CreateSut(IIdentityProfileRepository repo)
+    {
+        _access.Setup(a => a.CanAccessPersonAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _access.Setup(a => a.EnsureCanAccessProfileAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        return new IdentityProfileService(repo, _access.Object);
+    }
+
     [Test]
     public async Task Preferred_Returns_Default_For_Matching_Language()
     {
@@ -18,7 +28,7 @@ public class IdentityProfileServiceTests
         };
         var repo = new Mock<IIdentityProfileRepository>();
         repo.Setup(r => r.GetProfilesByPersonAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
-        var service = new IdentityProfileService(repo.Object);
+        var service = CreateSut(repo.Object);
 
         var preferred = await service.GetPreferredProfileAsync(10, IdentityContext.Legal, "en-GB");
         Assert.That(preferred!.Id, Is.EqualTo(1));
@@ -34,7 +44,7 @@ public class IdentityProfileServiceTests
         };
         var repo = new Mock<IIdentityProfileRepository>();
         repo.Setup(r => r.GetProfilesByPersonAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
-        var service = new IdentityProfileService(repo.Object);
+        var service = CreateSut(repo.Object);
 
         var preferred = await service.GetPreferredProfileAsync(10, IdentityContext.Legal, "en-GB");
         Assert.That(preferred, Is.Not.Null);
@@ -51,7 +61,7 @@ public class IdentityProfileServiceTests
         };
         var repo = new Mock<IIdentityProfileRepository>();
         repo.Setup(r => r.GetProfilesByPersonAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
-        var service = new IdentityProfileService(repo.Object);
+        var service = CreateSut(repo.Object);
 
         var preferred = await service.GetPreferredProfileAsync(10, IdentityContext.Legal, null);
         Assert.That(preferred!.Id, Is.EqualTo(1));
@@ -67,7 +77,7 @@ public class IdentityProfileServiceTests
         };
         var repo = new Mock<IIdentityProfileRepository>();
         repo.Setup(r => r.GetProfilesByPersonAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
-        var service = new IdentityProfileService(repo.Object);
+        var service = CreateSut(repo.Object);
 
         var preferred = await service.GetPreferredProfileAsync(10, IdentityContext.Legal, null);
         Assert.That(preferred, Is.Not.Null);
@@ -83,7 +93,7 @@ public class IdentityProfileServiceTests
         };
         var repo = new Mock<IIdentityProfileRepository>();
         repo.Setup(r => r.GetProfilesByPersonAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
-        var service = new IdentityProfileService(repo.Object);
+        var service = CreateSut(repo.Object);
 
         var preferred = await service.GetPreferredProfileAsync(10, IdentityContext.Legal, null);
         Assert.That(preferred, Is.Null);

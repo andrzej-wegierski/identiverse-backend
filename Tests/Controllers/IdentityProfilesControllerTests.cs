@@ -4,21 +4,18 @@ using Domain.Services;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using identiverse_backend.Controllers;
-using identiverse_backend.Services;
 
 namespace Tests.Controllers;
 
 public class IdentityProfilesControllerTests
 {
     private readonly Mock<IIdentityProfileService> _service = new();
-    private readonly Mock<ICurrentUserService> _currentUser = new();
 
-    private IdentityProfilesController CreateSut() => new(_service.Object, _currentUser.Object);
+    private IdentityProfilesController CreateSut() => new(_service.Object);
 
     [Test]
     public async Task GetProfilesForPerson_Returns_Ok_With_List()
     {
-        _currentUser.SetupGet(u => u.IsAdmin).Returns(true);
         var list = new List<IdentityProfileDto> { new() { Id = 1, PersonId = 10 } };
         _service.Setup(s => s.GetProfilesByPersonAsync(10, It.IsAny<CancellationToken>()))
             .ReturnsAsync(list);
@@ -34,7 +31,6 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task GetProfileById_Returns_Ok_When_Found()
     {
-        _currentUser.SetupGet(u => u.IsAdmin).Returns(true);
         var dto = new IdentityProfileDto { Id = 5, PersonId = 10 };
         _service.Setup(s => s.GetProfileByIdAsync(5, It.IsAny<CancellationToken>()))
             .ReturnsAsync(dto);
@@ -50,7 +46,6 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task GetProfileById_Returns_NotFound_When_Missing()
     {
-        _currentUser.SetupGet(u => u.IsAdmin).Returns(true);
         _service.Setup(s => s.GetProfileByIdAsync(999, It.IsAny<CancellationToken>()))
             .ReturnsAsync((IdentityProfileDto?)null);
 
@@ -62,8 +57,6 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task CreateProfile_Returns_CreatedAt_With_Payload()
     {
-        _currentUser.SetupGet(u => u.IsAdmin).Returns(false);
-        _currentUser.Setup(u => u.GetCurrentUser()).Returns(new CurrentUser { UserId = 1, Username = "u", Role = "User", PersonId = 10 });
         var create = new CreateIdentityProfileDto { DisplayName = "Alice (Work)", Context = IdentityContext.Legal, Language = "en-GB", IsDefaultForContext = true };
         var created = new IdentityProfileDto { Id = 42, PersonId = 10 };
         _service.Setup(s => s.CreateProfileAsync(10, create, It.IsAny<CancellationToken>()))
@@ -82,8 +75,6 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task UpdateProfile_Returns_Ok_When_Updated()
     {
-        _currentUser.SetupGet(u => u.IsAdmin).Returns(false);
-        _currentUser.Setup(u => u.GetCurrentUser()).Returns(new CurrentUser { UserId = 1, Username = "u", Role = "User", PersonId = 10 });
         var update = new UpdateIdentityProfileDto { DisplayName = "Alice (Work)", Context = IdentityContext.Legal, Language = "en-GB", IsDefaultForContext = false };
         var existing = new IdentityProfileDto { Id = 7, PersonId = 10 };
         var updated = new IdentityProfileDto { Id = 7, PersonId = 10, DisplayName = "Updated" };
@@ -102,8 +93,6 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task UpdateProfile_Returns_NotFound_When_Missing()
     {
-        _currentUser.SetupGet(u => u.IsAdmin).Returns(false);
-        _currentUser.Setup(u => u.GetCurrentUser()).Returns(new CurrentUser { UserId = 1, Username = "u", Role = "User", PersonId = 10 });
         var update = new UpdateIdentityProfileDto { DisplayName = "X", Context = IdentityContext.Legal };
         _service.Setup(s => s.GetProfileByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync((IdentityProfileDto?)null);
 
@@ -115,8 +104,6 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task DeleteProfile_Returns_NoContent_When_Deleted()
     {
-        _currentUser.SetupGet(u => u.IsAdmin).Returns(false);
-        _currentUser.Setup(u => u.GetCurrentUser()).Returns(new CurrentUser { UserId = 1, Username = "u", Role = "User", PersonId = 10 });
         _service.Setup(s => s.GetProfileByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(new IdentityProfileDto { Id = 1, PersonId = 10 });
         _service.Setup(s => s.DeleteProfileAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
@@ -128,8 +115,6 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task DeleteProfile_Returns_NotFound_When_Missing()
     {
-        _currentUser.SetupGet(u => u.IsAdmin).Returns(false);
-        _currentUser.Setup(u => u.GetCurrentUser()).Returns(new CurrentUser { UserId = 1, Username = "u", Role = "User", PersonId = 10 });
         _service.Setup(s => s.DeleteProfileAsync(2, It.IsAny<CancellationToken>())).ReturnsAsync(false);
         _service.Setup(s => s.GetProfileByIdAsync(2, It.IsAny<CancellationToken>())).ReturnsAsync(new IdentityProfileDto { Id = 2, PersonId = 10 });
 
@@ -141,8 +126,6 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task GetPreferredProfile_Returns_Ok_When_Found()
     {
-        _currentUser.SetupGet(u => u.IsAdmin).Returns(false);
-        _currentUser.Setup(u => u.GetCurrentUser()).Returns(new CurrentUser { UserId = 1, Username = "u", Role = "User", PersonId = 10 });
         var dto = new IdentityProfileDto { Id = 100, PersonId = 10, Context = IdentityContext.Legal, Language = "en-GB" };
         _service.Setup(s => s.GetPreferredProfileAsync(10, IdentityContext.Legal, "en-GB", It.IsAny<CancellationToken>()))
             .ReturnsAsync(dto);
@@ -158,8 +141,6 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task GetPreferredProfile_Returns_NotFound_When_None()
     {
-        _currentUser.SetupGet(u => u.IsAdmin).Returns(false);
-        _currentUser.Setup(u => u.GetCurrentUser()).Returns(new CurrentUser { UserId = 1, Username = "u", Role = "User", PersonId = 10 });
         _service.Setup(s => s.GetPreferredProfileAsync(10, IdentityContext.Legal, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync((IdentityProfileDto?)null);
 
@@ -168,25 +149,5 @@ public class IdentityProfilesControllerTests
         Assert.That(action.Result, Is.InstanceOf<NotFoundResult>());
     }
 
-    // Additional access-control tests
-    [Test]
-    public async Task GetProfilesForPerson_NonAdmin_Wrong_Person_Returns_Forbid()
-    {
-        _currentUser.SetupGet(u => u.IsAdmin).Returns(false);
-        _currentUser.Setup(u => u.GetCurrentUser()).Returns(new CurrentUser { UserId = 1, Username = "u", Role = "User", PersonId = 9 });
-        var controller = CreateSut();
-        var action = await controller.GetProfilesForPerson(10, default);
-        Assert.That(action.Result, Is.InstanceOf<ForbidResult>());
-    }
-
-    [Test]
-    public async Task GetProfileById_NonAdmin_For_Different_Person_Returns_Forbid()
-    {
-        _currentUser.SetupGet(u => u.IsAdmin).Returns(false);
-        _currentUser.Setup(u => u.GetCurrentUser()).Returns(new CurrentUser { UserId = 1, Username = "u", Role = "User", PersonId = 10 });
-        _service.Setup(s => s.GetProfileByIdAsync(5, It.IsAny<CancellationToken>())).ReturnsAsync(new IdentityProfileDto { Id = 5, PersonId = 11 });
-        var controller = CreateSut();
-        var action = await controller.GetProfileById(5, default);
-        Assert.That(action.Result, Is.InstanceOf<ForbidResult>());
-    }
+    // Controllers are thin; access is enforced in domain services, so we only verify pass-through behavior.
 }
