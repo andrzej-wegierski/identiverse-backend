@@ -10,6 +10,7 @@ public static class AuthenticationExtension
     public static IServiceCollection AddAuthenticationAndAuthorization(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
+        services.Configure<PasswordOptions>(configuration.GetSection("Password"));
         
         var jwtSection = configuration.GetSection("Jwt");
         var signingKey = new SymmetricSecurityKey(

@@ -14,23 +14,28 @@ public interface IAuthService
 {
     Task<AuthResponseDto> RegisterAsync(RegisterUserDto user, CancellationToken ct = default);
     Task<AuthResponseDto> LoginAsync(LoginUserDto user, CancellationToken ct = default);
-    Task<bool> CanAccessPersonAsync(int userId, bool isAdmin, int personId, CancellationToken ct = default);
-    Task<bool> CanAccessIdentityProfileAsync(int userId, bool isAdmin, int profileId, CancellationToken ct = default);
 }
 
 public class AuthService : IAuthService
 {
     private readonly IUserRepository _users;
-    private readonly IIdentityProfileRepository _profiles;
-    private readonly IPersonRepository _persons;
     private readonly JwtOptions _jwt;
+    private readonly PasswordOptions _pwd;
+    private readonly IPasswordPolicy _passwordPolicy;
+    private readonly ILoginThrottle _throttle;
 
-    public AuthService(IUserRepository users, IOptions<JwtOptions> jwtOptions, IIdentityProfileRepository profiles, IPersonRepository persons)
+    public AuthService(
+        IUserRepository users,
+        IOptions<JwtOptions> jwtOptions,
+        IOptions<PasswordOptions> passwordOptions,
+        IPasswordPolicy passwordPolicy,
+        ILoginThrottle throttle)
     {
         _users = users;
-        _profiles = profiles;
-        _persons = persons;
         _jwt = jwtOptions.Value;
+        _pwd = passwordOptions.Value;
+        _passwordPolicy = passwordPolicy;
+        _throttle = throttle;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterUserDto user, CancellationToken ct = default)
@@ -41,7 +46,9 @@ public class AuthService : IAuthService
         if (await _users.IsEmailTakenAsync(user.Email, ct))
             throw new ConflictException("Email is already registered");
         
-        var salt = RandomNumberGenerator.GetBytes(16);
+        _passwordPolicy.Validate(user.Password);
+
+        var salt = RandomNumberGenerator.GetBytes(_pwd.SaltSize);
         var hash = HashPassword(user.Password, salt);
 
         var newUserId = await _users.RegisterUserAsync(user, hash, salt, ct);
@@ -54,42 +61,41 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> LoginAsync(LoginUserDto user, CancellationToken ct = default)
     {
+        var key = user.UsernameOrEmail.Trim().ToLowerInvariant();
+        if (!await _throttle.IsAllowedAsync(key, ct))
+            throw new TooManyRequestsException("Too many login attempts. Please try again shortly.");
+
         var auth = await _users.GetAuthByUserNameOrEmailAsync(user.UsernameOrEmail, ct);
         if (auth is null)
+        {
+            await _throttle.RegisterFailureAsync(key, ct);
             throw new UnauthorizedIdentiverseException("Invalid credentials");
+        }
         
         var salt = Convert.FromBase64String(auth.PasswordSalt);
         var computed = Convert.ToBase64String(HashPassword(user.Password, salt));
         var expected = auth.PasswordHash;
         
         if (!CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(expected), Encoding.UTF8.GetBytes(computed)))
+        {
+            await _throttle.RegisterFailureAsync(key, ct);
             throw new UnauthorizedIdentiverseException("Invalid credentials");
+        }
         
+        await _throttle.RegisterSuccessAsync(key, ct);
         return CreateAuthResponse(auth.User);
     }
 
-    public async Task<bool> CanAccessPersonAsync(int userId, bool isAdmin, int personId, CancellationToken ct = default)
+    private byte[] HashPassword(string password, byte[] salt)
     {
-        if (isAdmin) return true;
-        var ownerUserId = await _persons.GetUserIdByPersonIdAsync(personId, ct);
-        return ownerUserId.HasValue && ownerUserId.Value == userId;
-    }
-
-    public async Task<bool> CanAccessIdentityProfileAsync(int userId, bool isAdmin, int profileId, CancellationToken ct = default)
-    {
-        if (isAdmin) return true;
-        var personId = await _profiles.GetPersonIdByProfileIdAsync(profileId, ct);
-        if (!personId.HasValue) return false;
-        var ownerUserId = await _persons.GetUserIdByPersonIdAsync(personId.Value, ct);
-        return ownerUserId.HasValue && ownerUserId.Value == userId;
-        
-    }
-
-    private static byte[] HashPassword(string password, byte[] salt)
-    {
-        const int iterations = 100_000; 
-        const int keySize = 32;
-        return Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, keySize);
+        var iterations = _pwd.Iterations;
+        var keySize = _pwd.KeySize;
+        var algo = _pwd.HashAlgorithm?.ToUpperInvariant() switch
+        {
+            "SHA512" => HashAlgorithmName.SHA512,
+            _ => HashAlgorithmName.SHA256
+        };
+        return Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, algo, keySize);
     }
 
     private AuthResponseDto CreateAuthResponse(UserDto user)

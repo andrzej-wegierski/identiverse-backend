@@ -8,7 +8,6 @@ using identiverse_backend.Services;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
-// CORS for frontend dev app (extracted to extension)
 builder.Services.AddFrontendCors();
 
 builder.Services.AddDatabase(builder.Configuration);
@@ -19,6 +18,8 @@ builder.Services.AddAuthenticationAndAuthorization(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<ICurrentUserContext, CurrentUserService>();
+
+builder.Services.AddSingleton<ILoginThrottle, InMemoryLoginThrottle>();
 
 builder.Services.AddSwagger();
 

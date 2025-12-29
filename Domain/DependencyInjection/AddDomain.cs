@@ -1,4 +1,5 @@
 using Domain.Services;
+using Domain.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Domain.DependencyInjection;
@@ -12,6 +13,7 @@ public static class AddDomainDependencyInjection
         services.AddScoped<IIdentityProfileService, IdentityProfileService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IAccessControllService, AccessControllService>();
+        services.AddScoped<IPasswordPolicy, PasswordPolicy>();
         
         return services;
     } 

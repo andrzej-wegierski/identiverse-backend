@@ -24,11 +24,27 @@ public class AuthServiceTests
         });
     }
 
-    private static AuthService CreateSut(Mock<IUserRepository> repo)
+    private static AuthService CreateSut(Mock<IUserRepository> repo,
+        IOptions<PasswordOptions>? pwdOptions = null,
+        Mock<IPasswordPolicy>? policy = null,
+        Mock<ILoginThrottle>? throttle = null)
     {
-        var profiles = new Mock<IIdentityProfileRepository>();
-        var persons = new Mock<IPersonRepository>();
-        return new AuthService(repo.Object, CreateJwtOptions(), profiles.Object, persons.Object);
+        var pwd = pwdOptions ?? Options.Create(new PasswordOptions
+        {
+            Iterations = 100_000,
+            SaltSize = 16,
+            KeySize = 32,
+            HashAlgorithm = "SHA256"
+        });
+        var pol = policy ?? new Mock<IPasswordPolicy>();
+        var thr = throttle ?? new Mock<ILoginThrottle>();
+        if (throttle is null)
+        {
+            thr.Setup(t => t.IsAllowedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+            thr.Setup(t => t.RegisterFailureAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            thr.Setup(t => t.RegisterSuccessAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        }
+        return new AuthService(repo.Object, CreateJwtOptions(), pwd, pol.Object, thr.Object);
     }
 
     [Test]
@@ -139,5 +155,40 @@ public class AuthServiceTests
         });
         var sut = CreateSut(repo);
         Assert.ThrowsAsync<UnauthorizedIdentiverseException>(() => sut.LoginAsync(new LoginUserDto { UsernameOrEmail = "user", Password = "wrong" }));
+    }
+
+    [Test]
+    public void RegisterAsync_Throws_When_Password_Weak_By_Policy()
+    {
+        var repo = new Mock<IUserRepository>();
+        repo.Setup(r => r.IsUsernameTakenAsync("weakpass", It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        repo.Setup(r => r.IsEmailTakenAsync("w@e.com", It.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+        var policy = new Mock<IPasswordPolicy>();
+        policy.Setup(p => p.Validate(It.IsAny<string>())).Throws(new ValidationException("weak"));
+
+        var sut = CreateSut(repo, policy: policy);
+        var reg = new RegisterUserDto { Username = "weakpass", Email = "w@e.com", Password = "weak" };
+        Assert.ThrowsAsync<ValidationException>(() => sut.RegisterAsync(reg));
+    }
+
+    [Test]
+    public void LoginAsync_Throws_TooManyRequests_When_Throttled()
+    {
+        var repo = new Mock<IUserRepository>();
+        // Set up a valid user to ensure the throttle is the cause of failure
+        repo.Setup(r => r.GetAuthByUserNameOrEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AuthUserData
+            {
+                User = new UserDto { Id = 99, Username = "user", Email = "e@e.com", Role = UserRole.User },
+                PasswordHash = Convert.ToBase64String(new byte[32]), // won't be used due to throttle
+                PasswordSalt = Convert.ToBase64String(new byte[16])
+            });
+        var throttle = new Mock<ILoginThrottle>();
+        throttle.Setup(t => t.IsAllowedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+        var sut = CreateSut(repo, throttle: throttle);
+        Assert.ThrowsAsync<TooManyRequestsException>(() =>
+            sut.LoginAsync(new LoginUserDto { UsernameOrEmail = "user", Password = "whatever" }));
     }
 }
