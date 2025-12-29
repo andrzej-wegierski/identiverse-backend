@@ -36,7 +36,7 @@ public class IdentityProfilesControllerTests
             .ReturnsAsync(dto);
 
         var controller = CreateSut();
-        var action = await controller.GetProfileById(5, default);
+        var action = await controller.GetProfileById(10, 5, default);
 
         Assert.That(action.Result, Is.InstanceOf<OkObjectResult>());
         var ok = (OkObjectResult)action.Result!;
@@ -50,7 +50,7 @@ public class IdentityProfilesControllerTests
             .ReturnsAsync((IdentityProfileDto?)null);
 
         var controller = CreateSut();
-        var action = await controller.GetProfileById(999, default);
+        var action = await controller.GetProfileById(10, 999, default);
         Assert.That(action.Result, Is.InstanceOf<NotFoundResult>());
     }
 

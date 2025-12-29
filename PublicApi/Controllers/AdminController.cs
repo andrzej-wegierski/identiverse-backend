@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace identiverse_backend.Controllers;
 
 [ApiController]
-[Route("/admin")]
+[Route("admin")]
 [Authorize(Policy = "AdminOnly")]
 public class AdminController : ControllerBase
 {

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace identiverse_backend.Controllers;
 
 [ApiController]
-[Route("/auth")]
+[Route("auth")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _auth;

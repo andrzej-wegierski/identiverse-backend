@@ -7,7 +7,7 @@ namespace identiverse_backend.Controllers;
 
 [Authorize]
 [ApiController]
-[Route("/persons")]
+[Route("persons")]
 public class PersonsController : ControllerBase
 {
     private readonly IPersonService _service;
@@ -17,7 +17,7 @@ public class PersonsController : ControllerBase
         _service = service;
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "AdminOnly")]
     [HttpGet]
     public async Task<ActionResult<List<PersonDto>>> GetPersons(CancellationToken ct = default)
     {
@@ -48,7 +48,7 @@ public class PersonsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<ActionResult> DeletePerson(int id, CancellationToken ct = default)
     {
         var deleted = await _service.DeletePersonAsync(id, ct);
