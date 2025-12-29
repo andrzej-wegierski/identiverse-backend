@@ -68,7 +68,8 @@ public class IdentityProfilesControllerTests
         Assert.That(action.Result, Is.InstanceOf<CreatedAtActionResult>());
         var result = (CreatedAtActionResult)action.Result!;
         Assert.That(result.ActionName, Is.EqualTo(nameof(IdentityProfilesController.GetProfileById)));
-        Assert.That(result.RouteValues!["id"], Is.EqualTo(created.Id));
+        Assert.That(result.RouteValues!["personId"], Is.EqualTo(10));
+        Assert.That(result.RouteValues!["identityId"], Is.EqualTo(created.Id));
         Assert.That(result.Value, Is.SameAs(created));
     }
 

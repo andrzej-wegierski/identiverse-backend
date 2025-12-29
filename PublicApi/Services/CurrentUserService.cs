@@ -25,8 +25,15 @@ public sealed class CurrentUserService(IHttpContextAccessor accessor) : ICurrent
     {
         get
         {
-            var role = accessor.HttpContext?.User.FindFirstValue(ClaimTypes.Role);
-            return string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase);
+            var principal = accessor.HttpContext?.User;
+            if (principal == null) return false;
+            
+            if (principal.IsInRole("Admin")) return true;
+            
+            var roles = principal.Claims
+                .Where(c => string.Equals(c.Type, ClaimTypes.Role, StringComparison.OrdinalIgnoreCase))
+                .Select(c => c.Value);
+            return roles.Any(r => string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase));
         }
     }
     
