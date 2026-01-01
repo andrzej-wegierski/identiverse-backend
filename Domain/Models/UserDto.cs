@@ -15,7 +15,7 @@ public class UserDto
 public class RegisterUserDto
 {
     [Required]
-    [MinLength(8, ErrorMessage = "Username must be at least 8 characters long.")]
+    [MinLength(5, ErrorMessage = "Username must be at least 5 characters long.")]
     public string Username { get; init; } = string.Empty;
     
     [Required]
