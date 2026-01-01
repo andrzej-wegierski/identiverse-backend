@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using Domain.Exceptions;
+using Domain.Services;
 using Microsoft.AspNetCore.Authorization;
 
 namespace identiverse_backend.Authorization;
@@ -8,18 +10,20 @@ public class SelfOrAdminRequirement : IAuthorizationRequirement { }
 public class SelfOrAdminHandler : AuthorizationHandler<SelfOrAdminRequirement>
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IAccessControlService _access;
 
-    public SelfOrAdminHandler(IHttpContextAccessor httpContextAccessor)
+    public SelfOrAdminHandler(IHttpContextAccessor httpContextAccessor, IAccessControlService access)
     {
         _httpContextAccessor = httpContextAccessor;
+        _access = access;
     }
 
-    protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, SelfOrAdminRequirement requirement)
+    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, SelfOrAdminRequirement requirement)
     {
         if (context.User.IsInRole("Admin"))
         {
             context.Succeed(requirement);
-            return Task.CompletedTask;
+            return;
         }
         
         var routeData = _httpContextAccessor.HttpContext?.GetRouteData();
@@ -28,19 +32,15 @@ public class SelfOrAdminHandler : AuthorizationHandler<SelfOrAdminRequirement>
 
         if (int.TryParse(personIdStr, out var personId))
         {
-            var userIdClaim = context.User.FindFirstValue(ClaimTypes.NameIdentifier) ??
-                              context.User.FindFirstValue("sub");
-            
-            
-            // todo: Remove this comment
-            // In this system, we rely on the AccessControllService for deep DB checks, 
-            // but for a "Proper" policy, we'd ideally check if the user is linked to this personId.
-            // However, the instructions ask for a policy that checks the route.
-            // Given the existing architecture, the Domain Service already throws ForbiddenException.
-            
-            context.Succeed(requirement);
+            try
+            {
+                await _access.CanAccessPersonAsync(personId);
+                context.Succeed(requirement);
+            }
+            catch (Exception ex) when (ex is ForbiddenException or UnauthorizedIdentiverseException or NotFoundException)
+            {
+                // Access denied or person not found - do not succeed
+            }
         }
-        
-        return Task.CompletedTask;
     }
 }
