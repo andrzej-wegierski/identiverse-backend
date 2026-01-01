@@ -63,7 +63,7 @@ public class PersonRepository : IPersonRepository
     {
         return await _db.Users
             .Where(u => u.PersonId == personId)
-            .Select(u => u.Id)
+            .Select(u => (int?)u.Id)
             .FirstOrDefaultAsync(ct);
     }
 }

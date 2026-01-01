@@ -144,4 +144,17 @@ public class IdentityProfileRepositoryTests
             (IdentityContext.Social, "Z"),
         }));
     }
+
+    [Test]
+    public async Task GetPersonIdByProfileIdAsync_Returns_Null_When_NotFound()
+    {
+        using var conn = new SqliteConnection("DataSource=:memory:");
+        conn.Open();
+        using var db = CreateDbContext(conn);
+        var factory = new IdentityProfileFactory();
+        var repo = new IdentityProfileRepository(db, factory);
+
+        var personId = await repo.GetPersonIdByProfileIdAsync(999);
+        Assert.That(personId, Is.Null);
+    }
 }

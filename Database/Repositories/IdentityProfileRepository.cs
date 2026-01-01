@@ -70,7 +70,7 @@ public class IdentityProfileRepository : IIdentityProfileRepository
     {
         return await _db.IdentityProfiles
             .Where(p => p.Id == profileId)
-            .Select(p => p.PersonId)
+            .Select(p => (int?)p.PersonId)
             .FirstOrDefaultAsync(ct);
     }
 }
