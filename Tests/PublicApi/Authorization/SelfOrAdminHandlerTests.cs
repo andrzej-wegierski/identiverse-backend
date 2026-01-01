@@ -59,7 +59,7 @@ public class SelfOrAdminHandlerTests
     }
 
     [Test]
-    public async Task HandleAsync_NonAdmin_WithValidPersonId_AccessServiceSucceeds_Succeeds()
+    public async Task HandleAsync_NonAdmin_WithValidId_AccessServiceSucceeds_Succeeds()
     {
         // Arrange
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -72,6 +72,29 @@ public class SelfOrAdminHandlerTests
         var context = CreateContext(user, routeData);
 
         _accessControlServiceMock.Setup(x => x.CanAccessPersonAsync(10, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _handler.HandleAsync(context);
+
+        // Assert
+        Assert.That(context.HasSucceeded, Is.True);
+    }
+
+    [Test]
+    public async Task HandleAsync_NonAdmin_WithValidPersonId_AccessServiceSucceeds_Succeeds()
+    {
+        // Arrange
+        var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.Role, "User")
+        }, "Test"));
+        
+        var routeData = new RouteData();
+        routeData.Values["personId"] = "20";
+        var context = CreateContext(user, routeData);
+
+        _accessControlServiceMock.Setup(x => x.CanAccessPersonAsync(20, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act

@@ -28,13 +28,14 @@ public class SelfOrAdminHandler : AuthorizationHandler<SelfOrAdminRequirement>
         
         var routeData = _httpContextAccessor.HttpContext?.GetRouteData();
         
-        var personIdStr = routeData?.Values["id"]?.ToString() ?? routeData?.Values["personId"]?.ToString();
+        var personIdValue = routeData?.Values["personId"] ?? routeData?.Values["id"];
+        var personIdStr = personIdValue?.ToString();
 
         if (int.TryParse(personIdStr, out var personId))
         {
             try
             {
-                await _access.CanAccessPersonAsync(personId);
+                await _access.CanAccessPersonAsync(personId, _httpContextAccessor.HttpContext?.RequestAborted ?? CancellationToken.None);
                 context.Succeed(requirement);
             }
             catch (Exception ex) when (ex is ForbiddenException or UnauthorizedIdentiverseException or NotFoundException)

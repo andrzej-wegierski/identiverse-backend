@@ -114,10 +114,21 @@ public class IdentityProfilesControllerTests
     }
 
     [Test]
-    public async Task DeleteProfile_Returns_NotFound_When_Missing()
+    public async Task DeleteProfile_Returns_NotFound_When_AlreadyDeleted_Or_Missing()
     {
-        _service.Setup(s => s.DeleteProfileAsync(2, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        _service.Setup(s => s.GetProfileByIdAsync(2, It.IsAny<CancellationToken>())).ReturnsAsync((IdentityProfileDto?)null);
+
+        var controller = CreateSut();
+        var action = await controller.DeleteProfile(10, 2, default);
+        Assert.That(action, Is.InstanceOf<NotFoundResult>());
+    }
+
+    [Test]
+    public async Task DeleteProfile_Returns_NotFound_When_DeleteFailed()
+    {
+        // This scenario: Profile exists and belongs to person, but DeleteProfileAsync returns false (e.g. race condition/concurrency)
         _service.Setup(s => s.GetProfileByIdAsync(2, It.IsAny<CancellationToken>())).ReturnsAsync(new IdentityProfileDto { Id = 2, PersonId = 10 });
+        _service.Setup(s => s.DeleteProfileAsync(2, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
         var controller = CreateSut();
         var action = await controller.DeleteProfile(10, 2, default);

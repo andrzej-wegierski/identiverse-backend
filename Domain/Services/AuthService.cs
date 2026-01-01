@@ -74,10 +74,10 @@ public class AuthService : IAuthService
         }
         
         var salt = Convert.FromBase64String(auth.PasswordSalt);
-        var computed = Convert.ToBase64String(HashPassword(user.Password, salt));
-        var expected = auth.PasswordHash;
+        var computed = HashPassword(user.Password, salt);
+        var expected = Convert.FromBase64String(auth.PasswordHash);
         
-        if (!CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(expected), Encoding.UTF8.GetBytes(computed)))
+        if (!CryptographicOperations.FixedTimeEquals(expected, computed))
         {
             await _throttle.RegisterFailureAsync(key, ct);
             throw new UnauthorizedIdentiverseException("Invalid credentials");

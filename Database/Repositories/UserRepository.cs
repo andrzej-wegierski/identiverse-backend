@@ -32,13 +32,13 @@ public class UserRepository : IUserRepository
 
     public async Task<UserDto?> GetByUsernameAsync(string username, CancellationToken ct = default)
     {
-        var entity = await _db.Users.FirstOrDefaultAsync(p => p.Username == username, ct);
+        var entity = await _db.Users.AsNoTracking().FirstOrDefaultAsync(p => p.Username == username, ct);
         return entity is null ? null : _factory.ToDto(entity);
     }
 
     public async Task<UserDto?> GetByEmailAsync(string email, CancellationToken ct = default)
     {
-        var entity = await _db.Users.FirstOrDefaultAsync(p => p.Email == email, ct);
+        var entity = await _db.Users.AsNoTracking().FirstOrDefaultAsync(p => p.Email == email, ct);
         return entity is null ? null : _factory.ToDto(entity);
     }
 

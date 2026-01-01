@@ -43,8 +43,6 @@ public class PersonService : IPersonService
     public async Task<PersonDto> CreatePersonForCurrentUserAsync(CreatePersonDto dto, CancellationToken ct = default)
     {
         var created = await _repo.CreatePersonAsync(dto, ct);
-        if (_users is null)
-            throw new InvalidOperationException("User repository is not configured for linking");
         var linked = await _users.SetPersonIdAsync(_current.UserId, created.Id, ct);
         if (!linked)
             throw new InvalidOperationException("Failed to link user to created person");

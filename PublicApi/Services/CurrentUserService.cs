@@ -72,10 +72,4 @@ public sealed class CurrentUserService(IHttpContextAccessor accessor) : ICurrent
             Role = role
         };
     }
-
-    private static string? FindFirstValueIgnoreCase(ClaimsPrincipal principal, string type)
-    {
-        var claim = principal.Claims.FirstOrDefault(c => string.Equals(c.Type, type, StringComparison.OrdinalIgnoreCase));
-        return claim?.Value;
-    }
 }
