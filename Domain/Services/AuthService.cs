@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using Domain.Exceptions;
+using Domain.Security;
 
 namespace Domain.Services;
 
@@ -100,7 +101,7 @@ public class AuthService : IAuthService
 
     private AuthResponseDto CreateAuthResponse(UserDto user)
     {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.SigningKey));
+        var key = new SymmetricSecurityKey(JwtKeyParser.GetSigningKeyBytes(_jwt.SigningKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new List<Claim>

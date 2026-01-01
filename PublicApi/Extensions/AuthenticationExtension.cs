@@ -1,5 +1,6 @@
 using System.Text;
 using Domain.Models;
+using Domain.Security;
 using identiverse_backend.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -15,8 +16,14 @@ public static class AuthenticationExtension
         services.Configure<PasswordOptions>(configuration.GetSection("Password"));
         
         var jwtSection = configuration.GetSection("Jwt");
-        var signingKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(jwtSection["SigningKey"]!));
+        var keyBytes = JwtKeyParser.GetSigningKeyBytes(jwtSection["SigningKey"]!);
+        
+        if (keyBytes.Length < 32)
+        {
+            Console.WriteLine("WARNING: JWT SigningKey is shorter than 32 bytes. This is not recommended for HMAC-SHA256.");
+        }
+        
+        var signingKey = new SymmetricSecurityKey(keyBytes);
         
         services.AddHttpContextAccessor();
         services.AddScoped<IAuthorizationHandler, SelfOrAdminHandler>();

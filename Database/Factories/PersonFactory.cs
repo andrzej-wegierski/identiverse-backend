@@ -48,9 +48,9 @@ public class PersonFactory : IPersonFactory
 
     public void UpdateEntityFromDto(Person entity, UpdatePersonDto dto)
     {
-        entity.FirstName = dto.FirstName;
-        entity.LastName = dto.LastName;
-        entity.PreferredName = dto.PreferredName;
+        entity.FirstName = dto.FirstName.Trim();
+        entity.LastName = dto.LastName.Trim();
+        entity.PreferredName = string.IsNullOrWhiteSpace(dto.PreferredName) ? null : dto.PreferredName.Trim();
         entity.UpdatedAt = DateTime.UtcNow;
     }
 }

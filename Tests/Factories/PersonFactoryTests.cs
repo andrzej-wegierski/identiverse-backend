@@ -102,9 +102,9 @@ public class PersonFactoryTests
         };
         var update = new UpdatePersonDto
         {
-            FirstName = "NewFirst",
-            LastName = "NewLast",
-            PreferredName = "NewPref"
+            FirstName = "  NewFirst  ",
+            LastName = "  NewLast  ",
+            PreferredName = "  NewPref  "
         };
 
         var before = DateTime.UtcNow.AddSeconds(-1);
@@ -120,5 +120,28 @@ public class PersonFactoryTests
         Assert.That(entity.UpdatedAt, Is.InRange(before, after));
         // init-only properties must remain unchanged
         Assert.That(entity.CreatedAt, Is.LessThan(entity.UpdatedAt));
+    }
+
+    [Test]
+    public void UpdateEntityFromDto_Normalizes_Empty_PreferredName_To_Null()
+    {
+        var entity = new Person
+        {
+            FirstName = "Old",
+            LastName = "Name",
+            PreferredName = "OldPref",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        var update = new UpdatePersonDto
+        {
+            FirstName = "NewFirst",
+            LastName = "NewLast",
+            PreferredName = "   "
+        };
+
+        _factory.UpdateEntityFromDto(entity, update);
+
+        Assert.That(entity.PreferredName, Is.Null);
     }
 }
