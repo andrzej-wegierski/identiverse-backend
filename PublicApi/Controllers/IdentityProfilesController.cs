@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace identiverse_backend.Controllers;
 
-[Authorize]
+[Authorize(Policy = "SelfOrAdmin")]
 [ApiController]
 [Route("persons/{personId:int}/identities")]
 public class IdentityProfilesController : ControllerBase

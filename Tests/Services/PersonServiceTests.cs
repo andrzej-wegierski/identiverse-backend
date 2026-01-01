@@ -9,7 +9,7 @@ public class PersonServiceTests
 {
     private readonly Mock<IPersonRepository> _repo = new();
     private readonly Mock<IUserRepository> _users = new();
-    private readonly Mock<IAccessControllService> _access = new();
+    private readonly Mock<IAccessControlService> _access = new();
     private readonly Mock<ICurrentUserContext> _current = new();
     private PersonService CreateSut()
     {

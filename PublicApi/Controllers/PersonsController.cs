@@ -26,6 +26,7 @@ public class PersonsController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Policy = "SelfOrAdmin")]
     public async Task<ActionResult<PersonDto>> GetPersonById(int id, CancellationToken ct = default)
     {
         var dto = await _service.GetPersonByIdAsync(id, ct);
@@ -40,6 +41,7 @@ public class PersonsController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "SelfOrAdmin")]
     public async Task<ActionResult<PersonDto>> UpdatePerson(int id, [FromBody] UpdatePersonDto request,
         CancellationToken ct = default)
     {
@@ -48,7 +50,7 @@ public class PersonsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize(Policy = "SelfOrAdmin")]
     public async Task<ActionResult> DeletePerson(int id, CancellationToken ct = default)
     {
         var deleted = await _service.DeletePersonAsync(id, ct);

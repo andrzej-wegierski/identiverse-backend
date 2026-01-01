@@ -18,9 +18,9 @@ public interface IIdentityProfileService
 public class IdentityProfileService : IIdentityProfileService
 {
     private readonly IIdentityProfileRepository _repo;
-    private readonly IAccessControllService _access;
+    private readonly IAccessControlService _access;
 
-    public IdentityProfileService(IIdentityProfileRepository repo, IAccessControllService access)
+    public IdentityProfileService(IIdentityProfileRepository repo, IAccessControlService access)
     {
         _repo = repo;
         _access = access;

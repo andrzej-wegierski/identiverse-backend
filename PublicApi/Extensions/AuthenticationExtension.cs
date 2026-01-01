@@ -1,6 +1,8 @@
 using System.Text;
 using Domain.Models;
+using identiverse_backend.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 
 namespace identiverse_backend.Extensions;
@@ -15,6 +17,9 @@ public static class AuthenticationExtension
         var jwtSection = configuration.GetSection("Jwt");
         var signingKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtSection["SigningKey"]!));
+        
+        services.AddHttpContextAccessor();
+        services.AddScoped<IAuthorizationHandler, SelfOrAdminHandler>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -33,6 +38,7 @@ public static class AuthenticationExtension
         services.AddAuthorization(options =>
         {
             options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+            options.AddPolicy("SelfOrAdmin", policy => policy.AddRequirements(new SelfOrAdminRequirement()));
         });
         
         return services;

@@ -17,10 +17,10 @@ public class PersonService : IPersonService
 {
     private readonly IPersonRepository _repo;
     private readonly IUserRepository _users;
-    private readonly IAccessControllService _access;
+    private readonly IAccessControlService _access;
     private readonly ICurrentUserContext _current;
 
-    public PersonService(IPersonRepository repo, IUserRepository users, IAccessControllService access, ICurrentUserContext current)
+    public PersonService(IPersonRepository repo, IUserRepository users, IAccessControlService access, ICurrentUserContext current)
     {
         _repo = repo;
         _users = users;

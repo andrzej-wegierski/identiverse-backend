@@ -3,20 +3,20 @@ using Domain.Exceptions;
 
 namespace Domain.Services;
 
-public interface IAccessControllService
+public interface IAccessControlService
 {
     Task CanAccessPersonAsync(int personId, CancellationToken ct = default);
     Task EnsureCanAccessProfileAsync(int profileId, CancellationToken ct = default);
 }
 
-public class AccessControllService : IAccessControllService
+public class AccessControlService : IAccessControlService
 {
     
     private readonly ICurrentUserContext _user;
     private readonly IIdentityProfileRepository _profiles;
     private readonly IPersonRepository _persons;
 
-    public AccessControllService(ICurrentUserContext user, IIdentityProfileRepository profiles, IPersonRepository persons)
+    public AccessControlService(ICurrentUserContext user, IIdentityProfileRepository profiles, IPersonRepository persons)
     {
         _user = user;
         _profiles = profiles;

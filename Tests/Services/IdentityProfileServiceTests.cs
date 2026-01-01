@@ -8,7 +8,7 @@ namespace Tests.Services;
 
 public class IdentityProfileServiceTests
 {
-    private readonly Mock<IAccessControllService> _access = new();
+    private readonly Mock<IAccessControlService> _access = new();
     private IdentityProfileService CreateSut(IIdentityProfileRepository repo)
     {
         _access.Setup(a => a.CanAccessPersonAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
