@@ -23,6 +23,8 @@ public class IdentityProfileEntityConfiguration : IEntityTypeConfiguration<Ident
     public void Configure(EntityTypeBuilder<IdentityProfile> builder)
     {
         builder.HasKey(p => p.Id);
+        
+        builder.Property(p => p.Id).ValueGeneratedOnAdd();
 
         builder.Property(p => p.DisplayName)
             .IsRequired()

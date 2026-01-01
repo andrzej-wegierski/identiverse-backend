@@ -28,7 +28,8 @@ public class IdentityProfileRepositoryTests
             FirstName = "Alice",
             LastName = "Doe",
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
+            ExternalId = Guid.NewGuid()
         };
         db.Persons.Add(p);
         db.SaveChanges();

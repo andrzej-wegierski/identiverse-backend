@@ -25,7 +25,6 @@ public static class AuthenticationExtension
         
         var signingKey = new SymmetricSecurityKey(keyBytes);
         
-        services.AddHttpContextAccessor();
         services.AddScoped<IAuthorizationHandler, SelfOrAdminHandler>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

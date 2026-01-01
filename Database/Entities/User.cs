@@ -30,6 +30,7 @@ public class UserEntityConfiguration : IEntityTypeConfiguration<User>
         builder.HasKey(u => u.Id);
 
         builder.Property(u => u.Username).IsRequired().HasMaxLength(100);
+        builder.Property(u => u.Id).ValueGeneratedOnAdd();
         builder.Property(u => u.Email).IsRequired().HasMaxLength(200);
         builder.Property(u => u.PasswordHash).IsRequired();
         builder.Property(u => u.PasswordSalt).IsRequired();
