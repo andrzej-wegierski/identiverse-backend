@@ -38,7 +38,6 @@ public class UserFactory : IUserFactory
         PasswordHash = Convert.ToBase64String(hash),
         PasswordSalt = Convert.ToBase64String(salt),
         Role = UserRole.User,
-        PersonId = dto.PersonId,
         CreatedAt = DateTime.UtcNow,
         UpdatedAt = DateTime.UtcNow
     };

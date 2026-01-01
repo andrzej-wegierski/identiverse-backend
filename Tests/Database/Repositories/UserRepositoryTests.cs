@@ -37,7 +37,7 @@ public class UserRepositoryTests
         var scope = CreateRepo();
         try
         {
-            var reg = new RegisterUserDto { Username = "u1", Email = "u1@x.com", Password = "Ignored", PersonId = null };
+            var reg = new RegisterUserDto { Username = "u1", Email = "u1@x.com", Password = "Ignored" };
             var id = await scope.repo.RegisterUserAsync(reg, new byte[] {1,2,3}, new byte[] {4,5,6});
             var saved = await scope.db.Users.FirstOrDefaultAsync(u => u.Id == id);
             Assert.That(saved, Is.Not.Null);
