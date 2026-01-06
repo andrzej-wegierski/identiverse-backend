@@ -1,3 +1,4 @@
+using Database;
 using Database.Entities;
 using Domain.Abstractions;
 using Domain.Models;
@@ -15,37 +16,48 @@ namespace identiverse_backend.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly IPersonService _persons;
-    private readonly UserManager<ApplicationUser> _users;
 
-    public AdminController(IPersonService persons, UserManager<ApplicationUser> users)
+    public AdminController(IPersonService persons)
     {
         _persons = persons;
-        _users = users;
     }
 
     [HttpGet("users")]
-    public async Task<ActionResult<List<UserDto>>> GetAllUsers(CancellationToken ct = default)
+    public async Task<ActionResult<List<AdminUserDto>>> GetAllUsers(
+        [FromServices] IdentiverseDbContext dbContext,
+        CancellationToken ct = default)
     {
-        var users = await _users.Users
+        var users = await dbContext.Users
             .AsNoTracking()
-            .Select(u => new AdminUserDto
+            .Select(u => new
             {
-                Id = u.Id,
+                u.Id,
                 Username = u.UserName ?? string.Empty,
                 Email = u.Email ?? string.Empty,
-                PersonId = u.PersonId,
-                Roles = new List<string>()
+                u.PersonId
             })
             .ToListAsync(ct);
 
-        foreach (var userDto in users)
-        {
-            var userEntity = new ApplicationUser { Id = userDto.Id };
-            var roles = await _users.GetRolesAsync(userEntity);
-            userDto.Roles.AddRange(roles);
-        }
+        var rolesByUserId = await (
+            from ur in dbContext.UserRoles.AsNoTracking()
+            join r in dbContext.Roles.AsNoTracking() on ur.RoleId equals r.Id
+            select new { ur.UserId, RoleName = r.Name! }
+        ).ToListAsync(ct);
 
-        return Ok(users);
+        var rolesLookup = rolesByUserId
+            .GroupBy(x => x.UserId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.RoleName).Distinct().ToList());
+
+        var result = users.Select(u => new AdminUserDto
+        {
+            Id = u.Id,
+            Username = u.Username,
+            Email = u.Email,
+            PersonId = u.PersonId,
+            Roles = rolesLookup.TryGetValue(u.Id, out var roles) ? roles : new List<string>()
+        }).ToList();
+
+        return Ok(result);
     }
 
     [HttpGet("persons")]
