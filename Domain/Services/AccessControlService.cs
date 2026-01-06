@@ -14,13 +14,16 @@ public class AccessControlService : IAccessControlService
     
     private readonly ICurrentUserContext _user;
     private readonly IIdentityProfileRepository _profiles;
-    private readonly IPersonRepository _persons;
+    private readonly IIdentityService _identity;
 
-    public AccessControlService(ICurrentUserContext user, IIdentityProfileRepository profiles, IPersonRepository persons)
+    public AccessControlService(
+        ICurrentUserContext user, 
+        IIdentityProfileRepository profiles,
+        IIdentityService identity)
     {
         _user = user;
         _profiles = profiles;
-        _persons = persons;
+        _identity = identity;
     }
 
     public async Task CanAccessPersonAsync(int personId, CancellationToken ct = default)
@@ -31,7 +34,7 @@ public class AccessControlService : IAccessControlService
         if (_user.IsAdmin)
             return;
         
-        var userId = await _persons.GetUserIdByPersonIdAsync(personId, ct);
+        var userId = await _identity.GetuserIdByPersonIdAsync(personId, ct);
         if (!userId.HasValue || userId.Value != _user.UserId)
             throw new ForbiddenException("User has no access to this person");
     }
@@ -48,7 +51,7 @@ public class AccessControlService : IAccessControlService
         if (!personId.HasValue)
             throw new NotFoundException("Profile not found");
         
-        var userId = await _persons.GetUserIdByPersonIdAsync(personId.Value, ct);
+        var userId = await _identity.GetuserIdByPersonIdAsync(personId.Value, ct);
         if (!userId.HasValue || userId.Value != _user.UserId)
             throw new ForbiddenException("User has no access to this identity profile");
     }

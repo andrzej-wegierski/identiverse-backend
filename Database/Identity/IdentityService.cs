@@ -3,6 +3,7 @@ using Domain.Abstractions;
 using Domain.Enums;
 using Domain.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Domain.Services;
 
@@ -41,5 +42,15 @@ public class IdentityService : IIdentityService
         user.PersonId = personId;
         var result = await _userManager.UpdateAsync(user);
         return result.Succeeded;
+    }
+
+    public async Task<int?> GetuserIdByPersonIdAsync(int personId, CancellationToken ct = default)
+    {
+        var user = await _userManager.Users
+            .Where(u => u.PersonId == personId)
+            .Select(u => new { u.Id })
+            .FirstOrDefaultAsync(ct);
+        
+        return user?.Id;
     }
 }
