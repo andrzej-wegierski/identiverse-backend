@@ -14,7 +14,6 @@ public class IdentiverseDbContext : IdentityDbContext<ApplicationUser, IdentityR
 
     public DbSet<Person> Persons { get; set; } = null!;
     public DbSet<IdentityProfile> IdentityProfiles { get; set; } = null!;
-    public DbSet<User> Users { get; set; } = null!;  // todo remove table after migration to .NET Core Identity 
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -22,7 +21,6 @@ public class IdentiverseDbContext : IdentityDbContext<ApplicationUser, IdentityR
         
         model.ApplyConfiguration(new PersonEntityConfiguration());
         model.ApplyConfiguration(new IdentityProfileEntityConfiguration());
-        model.ApplyConfiguration(new UserEntityConfiguration());
         
         model.Entity<ApplicationUser>(b =>
         {

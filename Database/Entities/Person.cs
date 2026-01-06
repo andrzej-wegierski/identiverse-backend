@@ -14,7 +14,6 @@ public class Person
     public DateTime UpdatedAt { get; set; }
 
     public List<IdentityProfile> IdentityProfiles { get; init; } = [];
-    public User? User { get; set; }
 }
 
 public class PersonEntityConfiguration : IEntityTypeConfiguration<Person>
