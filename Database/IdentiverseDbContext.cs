@@ -22,13 +22,15 @@ public class IdentiverseDbContext : IdentityDbContext<ApplicationUser, IdentityR
         model.ApplyConfiguration(new PersonEntityConfiguration());
         model.ApplyConfiguration(new IdentityProfileEntityConfiguration());
         
-        
         model.Entity<ApplicationUser>(b =>
         {
             b.HasOne(u => u.Person)
                 .WithOne()
                 .HasForeignKey<ApplicationUser>(u => u.PersonId)
                 .OnDelete(DeleteBehavior.SetNull);
+            
+            b.HasIndex(u => u.PersonId)
+                .IsUnique();
         });
     }
 }
