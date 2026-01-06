@@ -100,7 +100,7 @@ public class AuthService : IAuthService
             Id = user.Id,
             Username = user.UserName ?? string.Empty,
             Email = user.Email ?? string.Empty,
-            Role = Enum.TryParse<Enums.UserRole>(primaryRole, out var role) ? role : Enums.UserRole.User,
+            Role = Enum.TryParse<Enums.UserRole>(primaryRole, ignoreCase: true, out var role) ? role : Enums.UserRole.User,
             PersonId = user.PersonId
         };
     }

@@ -44,7 +44,7 @@ public class IdentityService : IIdentityService
         return result.Succeeded;
     }
 
-    public async Task<int?> GetuserIdByPersonIdAsync(int personId, CancellationToken ct = default)
+    public async Task<int?> GetUserIdByPersonIdAsync(int personId, CancellationToken ct = default)
     {
         var user = await _userManager.Users
             .Where(u => u.PersonId == personId)

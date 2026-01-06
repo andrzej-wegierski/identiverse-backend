@@ -34,7 +34,7 @@ public class AccessControlService : IAccessControlService
         if (_user.IsAdmin)
             return;
         
-        var userId = await _identity.GetuserIdByPersonIdAsync(personId, ct);
+        var userId = await _identity.GetUserIdByPersonIdAsync(personId, ct);
         if (!userId.HasValue || userId.Value != _user.UserId)
             throw new ForbiddenException("User has no access to this person");
     }
@@ -51,7 +51,7 @@ public class AccessControlService : IAccessControlService
         if (!personId.HasValue)
             throw new NotFoundException("Profile not found");
         
-        var userId = await _identity.GetuserIdByPersonIdAsync(personId.Value, ct);
+        var userId = await _identity.GetUserIdByPersonIdAsync(personId.Value, ct);
         if (!userId.HasValue || userId.Value != _user.UserId)
             throw new ForbiddenException("User has no access to this identity profile");
     }

@@ -6,5 +6,5 @@ public interface IIdentityService
 {
     Task<UserDto?> GetUserByIdAsync(int userId, CancellationToken ct = default);
     Task<bool> LinkPersonToUserAsync(int userId, int personId, CancellationToken ct = default);
-    Task<int?> GetuserIdByPersonIdAsync(int personId, CancellationToken ct = default);
+    Task<int?> GetUserIdByPersonIdAsync(int personId, CancellationToken ct = default);
 }

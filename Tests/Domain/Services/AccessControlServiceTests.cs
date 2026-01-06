@@ -30,7 +30,7 @@ public class AccessControlServiceTests
         _userMock.SetupGet(u => u.IsAdmin).Returns(false);
         _userMock.SetupGet(u => u.UserId).Returns(currentUserId);
         
-        _identityMock.Setup(r => r.GetuserIdByPersonIdAsync(personId, It.IsAny<CancellationToken>()))
+        _identityMock.Setup(r => r.GetUserIdByPersonIdAsync(personId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(ownerUserId);
 
         // Act & Assert
@@ -50,7 +50,7 @@ public class AccessControlServiceTests
         // Act & Assert
         await _sut.CanAccessPersonAsync(personId);
         
-        _identityMock.Verify(r => r.GetuserIdByPersonIdAsync(personId, It.IsAny<CancellationToken>()), Times.Never);
+        _identityMock.Verify(r => r.GetUserIdByPersonIdAsync(personId, It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Test]
@@ -64,7 +64,7 @@ public class AccessControlServiceTests
         _userMock.SetupGet(u => u.IsAdmin).Returns(false);
         _userMock.SetupGet(u => u.UserId).Returns(currentUserId);
         
-        _identityMock.Setup(r => r.GetuserIdByPersonIdAsync(personId, It.IsAny<CancellationToken>()))
+        _identityMock.Setup(r => r.GetUserIdByPersonIdAsync(personId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(currentUserId);
 
         // Act & Assert

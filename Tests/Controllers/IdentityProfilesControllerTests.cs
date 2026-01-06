@@ -32,7 +32,7 @@ public class IdentityProfilesControllerTests
     public async Task GetProfileById_Returns_Ok_When_Found()
     {
         var dto = new IdentityProfileDto { Id = 5, PersonId = 10 };
-        _service.Setup(s => s.GetProfileByIdAsync(5, It.IsAny<CancellationToken>()))
+        _service.Setup(s => s.GetProfileByIdForPersonAsync(10, 5, It.IsAny<CancellationToken>()))
             .ReturnsAsync(dto);
 
         var controller = CreateSut();
@@ -46,7 +46,7 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task GetProfileById_Returns_NotFound_When_Missing()
     {
-        _service.Setup(s => s.GetProfileByIdAsync(999, It.IsAny<CancellationToken>()))
+        _service.Setup(s => s.GetProfileByIdForPersonAsync(10, 999, It.IsAny<CancellationToken>()))
             .ReturnsAsync((IdentityProfileDto?)null);
 
         var controller = CreateSut();
@@ -80,7 +80,7 @@ public class IdentityProfilesControllerTests
         var existing = new IdentityProfileDto { Id = 7, PersonId = 10 };
         var updated = new IdentityProfileDto { Id = 7, PersonId = 10, DisplayName = "Updated" };
 
-        _service.Setup(s => s.GetProfileByIdAsync(7, It.IsAny<CancellationToken>())).ReturnsAsync(existing);
+        _service.Setup(s => s.GetProfileByIdForPersonAsync(10, 7, It.IsAny<CancellationToken>())).ReturnsAsync(existing);
         _service.Setup(s => s.UpdateProfileAsync(7, update, It.IsAny<CancellationToken>())).ReturnsAsync(updated);
 
         var controller = CreateSut();
@@ -95,7 +95,7 @@ public class IdentityProfilesControllerTests
     public async Task UpdateProfile_Returns_NotFound_When_Missing()
     {
         var update = new UpdateIdentityProfileDto { DisplayName = "X", Context = IdentityContext.Legal };
-        _service.Setup(s => s.GetProfileByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync((IdentityProfileDto?)null);
+        _service.Setup(s => s.GetProfileByIdForPersonAsync(10, 1, It.IsAny<CancellationToken>())).ReturnsAsync((IdentityProfileDto?)null);
 
         var controller = CreateSut();
         var action = await controller.UpdateProfile(10, 1, update, default);
@@ -105,7 +105,7 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task DeleteProfile_Returns_NoContent_When_Deleted()
     {
-        _service.Setup(s => s.GetProfileByIdAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(new IdentityProfileDto { Id = 1, PersonId = 10 });
+        _service.Setup(s => s.GetProfileByIdForPersonAsync(10, 1, It.IsAny<CancellationToken>())).ReturnsAsync(new IdentityProfileDto { Id = 1, PersonId = 10 });
         _service.Setup(s => s.DeleteProfileAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
         var controller = CreateSut();
@@ -116,7 +116,7 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task DeleteProfile_Returns_NotFound_When_AlreadyDeleted_Or_Missing()
     {
-        _service.Setup(s => s.GetProfileByIdAsync(2, It.IsAny<CancellationToken>())).ReturnsAsync((IdentityProfileDto?)null);
+        _service.Setup(s => s.GetProfileByIdForPersonAsync(10, 2, It.IsAny<CancellationToken>())).ReturnsAsync((IdentityProfileDto?)null);
 
         var controller = CreateSut();
         var action = await controller.DeleteProfile(10, 2, default);
@@ -127,7 +127,7 @@ public class IdentityProfilesControllerTests
     public async Task DeleteProfile_Returns_NotFound_When_DeleteFailed()
     {
         // This scenario: Profile exists and belongs to person, but DeleteProfileAsync returns false (e.g. race condition/concurrency)
-        _service.Setup(s => s.GetProfileByIdAsync(2, It.IsAny<CancellationToken>())).ReturnsAsync(new IdentityProfileDto { Id = 2, PersonId = 10 });
+        _service.Setup(s => s.GetProfileByIdForPersonAsync(10, 2, It.IsAny<CancellationToken>())).ReturnsAsync(new IdentityProfileDto { Id = 2, PersonId = 10 });
         _service.Setup(s => s.DeleteProfileAsync(2, It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
         var controller = CreateSut();

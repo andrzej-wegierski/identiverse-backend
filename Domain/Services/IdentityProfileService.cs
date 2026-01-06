@@ -7,7 +7,7 @@ namespace Domain.Services;
 public interface IIdentityProfileService
 {
     Task<List<IdentityProfileDto>> GetProfilesByPersonAsync(int personId, CancellationToken ct = default);
-    Task<IdentityProfileDto?> GetProfileByIdAsync(int id, CancellationToken ct = default);
+    Task<IdentityProfileDto?> GetProfileByIdForPersonAsync(int personId, int identityId, CancellationToken ct = default);
     Task<IdentityProfileDto> CreateProfileAsync(int personId, CreateIdentityProfileDto dto, CancellationToken ct = default);
     Task<IdentityProfileDto?> UpdateProfileAsync(int id, UpdateIdentityProfileDto dto, CancellationToken ct = default);
     Task<bool> DeleteProfileAsync(int id, CancellationToken ct = default);
@@ -32,11 +32,15 @@ public class IdentityProfileService : IIdentityProfileService
         await _access.CanAccessPersonAsync(personId, ct);
         return await _repo.GetProfilesByPersonAsync(personId, ct);
     }
-
-    public async Task<IdentityProfileDto?> GetProfileByIdAsync(int id, CancellationToken ct = default)
+    
+    public async Task<IdentityProfileDto?> GetProfileByIdForPersonAsync(int personId, int identityId, CancellationToken ct = default)
     {
-        await _access.EnsureCanAccessProfileAsync(id, ct);
-        return await _repo.GetProfileByIdAsync(id, ct);
+        await _access.CanAccessPersonAsync(personId, ct);
+        var profile = await _repo.GetProfileByIdAsync(identityId, ct);
+        if (profile is null || profile.PersonId != personId)
+            return null;
+
+        return profile;
     }
 
     public  async Task<IdentityProfileDto> CreateProfileAsync(int personId, CreateIdentityProfileDto dto,
