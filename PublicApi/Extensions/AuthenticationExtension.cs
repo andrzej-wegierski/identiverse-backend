@@ -35,10 +35,11 @@ public static class AuthenticationExtension
         var jwtSection = configuration.GetSection("Jwt");
         var keyBytes = JwtKeyParser.GetSigningKeyBytes(jwtSection["SigningKey"]!);
         
+        if (keyBytes.Length == 0)
+            throw new InvalidOperationException("JWT SigningKey is missing or empty in configuration. Please provide a valid key in 'Jwt:SigningKey'.");
+        
         if (keyBytes.Length < 32)
-        {
             Console.WriteLine("WARNING: JWT SigningKey is shorter than 32 bytes. This is not recommended for HMAC-SHA256.");
-        }
         
         var signingKey = new SymmetricSecurityKey(keyBytes);
         
