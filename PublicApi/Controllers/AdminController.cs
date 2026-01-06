@@ -1,8 +1,11 @@
+using Database.Entities;
 using Domain.Abstractions;
 using Domain.Models;
 using Domain.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace identiverse_backend.Controllers;
 
@@ -11,19 +14,19 @@ namespace identiverse_backend.Controllers;
 [Authorize(Policy = "AdminOnly")]
 public class AdminController : ControllerBase
 {
-    private readonly IUserRepository _users;
     private readonly IPersonService _persons;
+    private readonly UserManager<ApplicationUser> _users;
 
-    public AdminController(IUserRepository users, IPersonService persons)
+    public AdminController(IPersonService persons, UserManager<ApplicationUser> users)
     {
-        _users = users;
         _persons = persons;
+        _users = users;
     }
 
     [HttpGet("users")]
     public async Task<ActionResult<List<UserDto>>> GetAllUsers(CancellationToken ct = default)
     {
-        var list = await _users.GetAllAsync(ct);
+        var list = await _users.Users.ToListAsync(ct);
         return Ok(list);
     }
 

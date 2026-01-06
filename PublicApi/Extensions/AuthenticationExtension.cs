@@ -30,6 +30,7 @@ public static class AuthenticationExtension
             options.User.RequireUniqueEmail = true;
         })
         .AddRoles<IdentityRole<int>>()
+        .AddSignInManager()
         .AddEntityFrameworkStores<IdentiverseDbContext>()
         .AddDefaultTokenProviders();
         

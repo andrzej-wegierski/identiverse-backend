@@ -1,6 +1,7 @@
 using Domain.Abstractions;
 using Domain.Exceptions;
 using Domain.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace Domain.Services;
 
@@ -17,14 +18,18 @@ public interface IPersonService
 public class PersonService : IPersonService
 {
     private readonly IPersonRepository _repo;
-    private readonly IUserRepository _users;
+    private readonly IIdentityService _identityService;
     private readonly IAccessControlService _access;
     private readonly ICurrentUserContext _current;
 
-    public PersonService(IPersonRepository repo, IUserRepository users, IAccessControlService access, ICurrentUserContext current)
+    public PersonService(
+        IPersonRepository repo, 
+        IIdentityService identityService,
+        IAccessControlService access, 
+        ICurrentUserContext current)
     {
         _repo = repo;
-        _users = users;
+        _identityService = identityService;
         _access = access;
         _current = current;
     }
@@ -43,7 +48,7 @@ public class PersonService : IPersonService
 
     public async Task<PersonDto> CreatePersonForCurrentUserAsync(CreatePersonDto dto, CancellationToken ct = default)
     {
-        var user = await _users.GetByIdAsync(_current.UserId, ct);
+        var user = await _identityService.GetUserByIdAsync(_current.UserId, ct);
         if (user is null)
             throw new NotFoundException("User not found");
         
@@ -51,7 +56,7 @@ public class PersonService : IPersonService
             throw new ConflictException("Person already exists for this user. Update instead.");
         
         var created = await _repo.CreatePersonAsync(dto, ct);
-        var linked = await _users.SetPersonIdAsync(_current.UserId, created.Id, ct);
+        var linked = await _identityService.LinkPersonToUserAsync(user.Id, created.Id, ct);
         if (!linked)
             throw new InvalidOperationException("Failed to link user to created person");
         

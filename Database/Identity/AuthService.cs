@@ -17,15 +17,18 @@ namespace Domain.Services;
 public class AuthService : IAuthService
 {
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly JwtOptions _jwt;
     private readonly ILoginThrottle _throttle;
 
     public AuthService(
-        UserManager<ApplicationUser> userManager, 
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
         IOptions<JwtOptions> jwtOptions,
         ILoginThrottle throttle)
     {
         _userManager = userManager;
+        _signInManager = signInManager;
         _jwt = jwtOptions.Value;
         _throttle = throttle;
     }
@@ -55,24 +58,52 @@ public class AuthService : IAuthService
         
         await _userManager.AddToRoleAsync(appUser, "User");
         
-        var userDto = MapToDto(appUser, "User");
+        var userDto = await MapToDtoAsync(appUser);
         return CreateAuthResponse(userDto);
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginUserDto user, CancellationToken ct = default)
     {
-        // todo implement this!
-        throw new NotImplementedException();
+        if (!await _throttle.IsAllowedAsync(user.UsernameOrEmail, ct))
+            throw new TooManyRequestsException("Too many login attempts. Please try again later.");
+        
+        var appUser = await _userManager.FindByNameAsync(user.UsernameOrEmail)
+            ?? await _userManager.FindByEmailAsync(user.UsernameOrEmail);
+
+        if (appUser is null)
+        {
+            await _throttle.RegisterFailureAsync(user.UsernameOrEmail, ct);
+            throw new UnauthorizedIdentiverseException("Invalid username or password");
+        }
+
+        var result = await _signInManager.CheckPasswordSignInAsync(appUser, user.Password, true);
+        
+        if (result.IsLockedOut)
+            throw new ForbiddenException("User is locked due to multiple failed login attempts.");
+
+        if (!result.Succeeded)
+        {
+            await _throttle.RegisterFailureAsync(user.UsernameOrEmail, ct);
+            throw new UnauthorizedIdentiverseException("Invalid username or password");
+        }
+        
+        await _throttle.RegisterSuccessAsync(user.UsernameOrEmail, ct);
+        
+        var userDto = await MapToDtoAsync(appUser);
+        return CreateAuthResponse(userDto);
     }
 
-    private static UserDto MapToDto(ApplicationUser user, string role)
+    private async Task<UserDto> MapToDtoAsync(ApplicationUser user)
     {
+        var roles = await _userManager.GetRolesAsync(user);
+        var primaryRole = roles.FirstOrDefault() ?? "User";
+        
         return new UserDto
         {
             Id = user.Id,
             Username = user.UserName ?? string.Empty,
             Email = user.Email ?? string.Empty,
-            Role = Enum.Parse<Enums.UserRole>(role),
+            Role = Enum.TryParse<Enums.UserRole>(primaryRole, out var role) ? role : Enums.UserRole.User,
             PersonId = user.PersonId
         };
     }

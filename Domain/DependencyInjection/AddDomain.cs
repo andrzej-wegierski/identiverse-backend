@@ -11,7 +11,6 @@ public static class AddDomainDependencyInjection
         // Services
         services.AddScoped<IPersonService, PersonService>();
         services.AddScoped<IIdentityProfileService, IdentityProfileService>();
-        services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IAccessControlService, AccessControlService>();
         
         return services;
