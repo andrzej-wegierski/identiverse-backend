@@ -151,4 +151,55 @@ public class SelfOrAdminHandlerTests
         // Assert
         Assert.That(context.HasSucceeded, Is.False);
     }
+    
+    [Test]
+    public async Task HandleAsync_NoPersonIdInRoute_CallsFail()
+    {
+        // Arrange
+        var user = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, "User") }, "Test"));
+        var context = CreateContext(user, new RouteData());
+
+        // Act
+        await _handler.HandleAsync(context);
+
+        // Assert
+        Assert.That(context.HasFailed, Is.True);
+    }
+
+    [Test]
+    public async Task HandleAsync_InvalidPersonIdInRoute_CallsFail()
+    {
+        // Arrange
+        var user = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, "User") }, "Test"));
+        var routeData = new RouteData();
+        routeData.Values["id"] = "not-an-int";
+        var context = CreateContext(user, routeData);
+
+        // Act
+        await _handler.HandleAsync(context);
+
+        // Assert
+        Assert.That(context.HasFailed, Is.True);
+    }
+
+    [Test]
+    [TestCase(typeof(ForbiddenException))]
+    public async Task HandleAsync_AccessServiceThrows_CallsFail(Type exceptionType)
+    {
+        // Arrange
+        var user = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Role, "User") }, "Test"));
+        var routeData = new RouteData();
+        routeData.Values["id"] = "10";
+        var context = CreateContext(user, routeData);
+
+        var exception = (Exception)Activator.CreateInstance(exceptionType, "Access Denied")!;
+        _accessControlServiceMock.Setup(x => x.CanAccessPersonAsync(10, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(exception);
+
+        // Act
+        await _handler.HandleAsync(context);
+
+        // Assert
+        Assert.That(context.HasFailed, Is.True);
+    }
 }
