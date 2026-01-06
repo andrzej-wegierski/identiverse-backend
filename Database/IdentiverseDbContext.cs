@@ -22,6 +22,7 @@ public class IdentiverseDbContext : IdentityDbContext<ApplicationUser, IdentityR
         model.ApplyConfiguration(new PersonEntityConfiguration());
         model.ApplyConfiguration(new IdentityProfileEntityConfiguration());
         
+        
         model.Entity<ApplicationUser>(b =>
         {
             b.HasOne(u => u.Person)
