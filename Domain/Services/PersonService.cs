@@ -1,4 +1,5 @@
 using Domain.Abstractions;
+using Domain.Exceptions;
 using Domain.Models;
 
 namespace Domain.Services;
@@ -42,10 +43,18 @@ public class PersonService : IPersonService
 
     public async Task<PersonDto> CreatePersonForCurrentUserAsync(CreatePersonDto dto, CancellationToken ct = default)
     {
+        var user = await _users.GetByIdAsync(_current.UserId, ct);
+        if (user is null)
+            throw new NotFoundException("User not found");
+        
+        if (user.PersonId.HasValue)
+            throw new ConflictException("Person already exists for this user. Update instead.");
+        
         var created = await _repo.CreatePersonAsync(dto, ct);
         var linked = await _users.SetPersonIdAsync(_current.UserId, created.Id, ct);
         if (!linked)
             throw new InvalidOperationException("Failed to link user to created person");
+        
         return created;
     }
 

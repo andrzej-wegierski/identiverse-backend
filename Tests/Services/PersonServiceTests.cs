@@ -1,4 +1,5 @@
 using Domain.Abstractions;
+using Domain.Exceptions;
 using Domain.Models;
 using Domain.Services;
 using Moq;
@@ -13,6 +14,11 @@ public class PersonServiceTests
     private readonly Mock<ICurrentUserContext> _current = new();
     private PersonService CreateSut()
     {
+        _repo.Invocations.Clear();
+        _users.Invocations.Clear();
+        _access.Invocations.Clear();
+        _current.Invocations.Clear();
+
         // Allow all access by default for unit tests unless overridden
         _access.Setup(a => a.CanAccessPersonAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -111,6 +117,8 @@ public class PersonServiceTests
         _repo.Setup(r => r.CreatePersonAsync(input, It.IsAny<CancellationToken>()))
             .ReturnsAsync(created);
         _current.SetupGet(c => c.UserId).Returns(5);
+        _users.Setup(u => u.GetByIdAsync(5, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new UserDto { Id = 5, PersonId = null });
         _users.Setup(u => u.SetPersonIdAsync(5, 123, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
@@ -129,10 +137,37 @@ public class PersonServiceTests
         _repo.Setup(r => r.CreatePersonAsync(input, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PersonDto { Id = 7 });
         _current.SetupGet(c => c.UserId).Returns(9);
+        _users.Setup(u => u.GetByIdAsync(9, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new UserDto { Id = 9, PersonId = null });
         _users.Setup(u => u.SetPersonIdAsync(9, 7, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         var sut = CreateSut();
         Assert.ThrowsAsync<InvalidOperationException>(async () => await sut.CreatePersonForCurrentUserAsync(input));
+    }
+    
+    [Test]
+    public async Task CreatePersonForCurrentUserAsync_When_Person_Already_Exists_Throws_ConflictException()
+    {
+        // Arrange
+        var input = new CreatePersonDto { FirstName = "John", LastName = "Doe" };
+        var userId = 5;
+        var existingUser = new UserDto { Id = userId, PersonId = 999 }; // Already has a Person
+    
+        _current.SetupGet(c => c.UserId).Returns(userId);
+        _users.Setup(u => u.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingUser);
+
+        var sut = CreateSut();
+
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<ConflictException>(async () => 
+            await sut.CreatePersonForCurrentUserAsync(input));
+    
+        Assert.That(ex!.Message, Is.EqualTo("Person already exists for this user. Update instead."));
+    
+        // Verify no side effects
+        _repo.Verify(r => r.CreatePersonAsync(It.IsAny<CreatePersonDto>(), It.IsAny<CancellationToken>()), Times.Never);
+        _users.Verify(u => u.SetPersonIdAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }
