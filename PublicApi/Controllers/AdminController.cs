@@ -26,8 +26,26 @@ public class AdminController : ControllerBase
     [HttpGet("users")]
     public async Task<ActionResult<List<UserDto>>> GetAllUsers(CancellationToken ct = default)
     {
-        var list = await _users.Users.ToListAsync(ct);
-        return Ok(list);
+        var users = await _users.Users
+            .AsNoTracking()
+            .Select(u => new AdminUserDto
+            {
+                Id = u.Id,
+                Username = u.UserName ?? string.Empty,
+                Email = u.Email ?? string.Empty,
+                PersonId = u.PersonId,
+                Roles = new List<string>()
+            })
+            .ToListAsync(ct);
+
+        foreach (var userDto in users)
+        {
+            var userEntity = new ApplicationUser { Id = userDto.Id };
+            var roles = await _users.GetRolesAsync(userEntity);
+            userDto.Roles.AddRange(roles);
+        }
+
+        return Ok(users);
     }
 
     [HttpGet("persons")]

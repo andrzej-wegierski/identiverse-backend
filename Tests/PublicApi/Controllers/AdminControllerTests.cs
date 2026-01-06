@@ -1,3 +1,4 @@
+using Database;
 using Database.Entities;
 using Domain.Abstractions;
 using Domain.Enums;
@@ -36,5 +37,39 @@ public class AdminControllerTests
         Assert.That(action.Result, Is.InstanceOf<OkObjectResult>());
         var ok = (OkObjectResult)action.Result!;
         Assert.That(ok.Value, Is.SameAs(list));
+    }
+    
+    [Test]
+    public async Task GetAllUsers_Returns_Ok_With_AdminUserDto_List()
+    {
+        // Arrange
+        var usersList = new List<ApplicationUser> 
+        { 
+            new() { Id = 1, UserName = "admin", Email = "admin@test.com", PersonId = 10 } 
+        };
+
+        var options = new DbContextOptionsBuilder<IdentiverseDbContext>()
+            .UseInMemoryDatabase(databaseName: "AdminControllerTests_GetAllUsers")
+            .Options;
+
+        using var dbContext = new IdentiverseDbContext(options);
+        dbContext.Users.AddRange(usersList);
+        await dbContext.SaveChangesAsync();
+
+        var store = new Microsoft.AspNetCore.Identity.EntityFrameworkCore.UserStore<ApplicationUser, IdentityRole<int>, IdentiverseDbContext, int>(dbContext);
+        var userManager = new UserManager<ApplicationUser>(store, null!, new PasswordHasher<ApplicationUser>(), null!, null!, null!, null!, null!, null!);
+        
+        var controller = new AdminController(_persons.Object, userManager);
+
+        // Act
+        var action = await controller.GetAllUsers(default);
+
+        // Assert
+        Assert.That(action.Result, Is.InstanceOf<OkObjectResult>());
+        var ok = (OkObjectResult)action.Result!;
+        var resultList = (List<AdminUserDto>)ok.Value!;
+    
+        Assert.That(resultList, Has.Count.EqualTo(1));
+        Assert.That(resultList[0].Username, Is.EqualTo("admin"));
     }
 }
