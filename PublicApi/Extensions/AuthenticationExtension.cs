@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
-using PasswordOptions = Domain.Models.PasswordOptions;
 
 namespace identiverse_backend.Extensions;
 
@@ -17,7 +16,6 @@ public static class AuthenticationExtension
     public static IServiceCollection AddAuthenticationAndAuthorization(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
-        services.Configure<PasswordOptions>(configuration.GetSection("Password"));
         
         services.AddIdentityCore<ApplicationUser>(options =>
         {

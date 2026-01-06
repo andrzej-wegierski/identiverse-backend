@@ -1,6 +1,4 @@
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using Domain.Abstractions;
 using Domain.Models;
 using Microsoft.Extensions.Options;
@@ -10,7 +8,6 @@ using Database.Entities;
 using Domain.Exceptions;
 using Domain.Security;
 using Microsoft.AspNetCore.Identity;
-using PasswordOptions = Domain.Models.PasswordOptions;
 
 namespace Domain.Services;
 
