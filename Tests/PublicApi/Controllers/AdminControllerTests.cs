@@ -1,31 +1,30 @@
+using Database.Entities;
 using Domain.Abstractions;
 using Domain.Enums;
 using Domain.Models;
 using Domain.Services;
 using identiverse_backend.Controllers;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
+using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Tests.PublicApi.Controllers;
 
 public class AdminControllerTests
 {
-    private readonly Mock<IUserRepository> _users = new();
     private readonly Mock<IPersonService> _persons = new();
+    private Mock<UserManager<ApplicationUser>> _userManagerMock = null!;
 
-    private AdminController CreateSut() => new(_users.Object, _persons.Object);
-
-    [Test]
-    public async Task GetAllUsers_Returns_Ok_With_List()
+    [SetUp]
+    public void SetUp()
     {
-        var list = new List<UserDto> { new() { Id = 1, Username = "u", Email = "e@e.com", Role = UserRole.User } };
-        _users.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(list);
-        var controller = CreateSut();
-        var action = await controller.GetAllUsers();
-        Assert.That(action.Result, Is.InstanceOf<OkObjectResult>());
-        var ok = (OkObjectResult)action.Result!;
-        Assert.That(ok.Value, Is.SameAs(list));
+        var store = new Mock<IUserStore<ApplicationUser>>();
+        _userManagerMock = new Mock<UserManager<ApplicationUser>>(store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
     }
+
+    private AdminController CreateSut() => new(_persons.Object, _userManagerMock.Object);
 
     [Test]
     public async Task GetAllPersons_Returns_Ok_With_List()

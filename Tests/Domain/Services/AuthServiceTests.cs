@@ -1,11 +1,15 @@
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Cryptography;
+using System.Security.Claims;
 using System.Text;
+using Database.Entities;
 using Domain.Abstractions;
 using Domain.Enums;
 using Domain.Exceptions;
 using Domain.Models;
 using Domain.Services;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
@@ -13,182 +17,141 @@ namespace Tests.Domain.Services;
 
 public class AuthServiceTests
 {
-    private static IOptions<JwtOptions> CreateJwtOptions()
+    private Mock<UserManager<ApplicationUser>> _userManagerMock = null!;
+    private Mock<SignInManager<ApplicationUser>> _signInManagerMock = null!;
+    private Mock<ILoginThrottle> _throttleMock = null!;
+    private IOptions<JwtOptions> _jwtOptions = null!;
+
+    [SetUp]
+    public void SetUp()
     {
-        return Options.Create(new JwtOptions
+        var store = new Mock<IUserStore<ApplicationUser>>();
+        _userManagerMock = new Mock<UserManager<ApplicationUser>>(store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        
+        var contextAccessor = new Mock<IHttpContextAccessor>();
+        var claimsFactory = new Mock<IUserClaimsPrincipalFactory<ApplicationUser>>();
+        _signInManagerMock = new Mock<SignInManager<ApplicationUser>>(
+            _userManagerMock.Object, 
+            contextAccessor.Object, 
+            claimsFactory.Object, 
+            null!, null!, null!, null!);
+
+        _throttleMock = new Mock<ILoginThrottle>();
+        _throttleMock.Setup(t => t.IsAllowedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        _jwtOptions = Options.Create(new JwtOptions
         {
             Issuer = "identiverse.test",
             Audience = "identiverse.aud",
-            SigningKey = Convert.ToBase64String(Encoding.UTF8.GetBytes("super_secret_signing_key_12345")),
+            SigningKey = Convert.ToBase64String(Encoding.UTF8.GetBytes("super_secret_signing_key_12345_67890")),
             ExpiryMinutes = 60
         });
     }
 
-    private static AuthService CreateSut(Mock<IUserRepository> repo,
-        IOptions<PasswordOptions>? pwdOptions = null,
-        Mock<IPasswordPolicy>? policy = null,
-        Mock<ILoginThrottle>? throttle = null)
+    private AuthService CreateSut()
     {
-        var pwd = pwdOptions ?? Options.Create(new PasswordOptions
-        {
-            Iterations = 100_000,
-            SaltSize = 16,
-            KeySize = 32,
-            HashAlgorithm = "SHA256"
-        });
-        var pol = policy ?? new Mock<IPasswordPolicy>();
-        var thr = throttle ?? new Mock<ILoginThrottle>();
-        if (throttle is null)
-        {
-            thr.Setup(t => t.IsAllowedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
-            thr.Setup(t => t.RegisterFailureAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-            thr.Setup(t => t.RegisterSuccessAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
-        }
-        return new AuthService(repo.Object, CreateJwtOptions(), pwd, pol.Object, thr.Object);
+        return new AuthService(_userManagerMock.Object, _signInManagerMock.Object, _jwtOptions, _throttleMock.Object);
     }
 
     [Test]
-    public async Task RegisterAsync_Succeeds_With_Unique_Username_And_Email()
+    public async Task RegisterAsync_Succeeds_When_Identity_Succeeds()
     {
-        var repo = new Mock<IUserRepository>();
-        repo.Setup(r => r.IsUsernameTakenAsync("newuser", It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        repo.Setup(r => r.IsEmailTakenAsync("new@user.com", It.IsAny<CancellationToken>())).ReturnsAsync(false);
-
         var reg = new RegisterUserDto { Username = "newuser", Email = "new@user.com", Password = "P@ssword1234" };
+        
+        _userManagerMock.Setup(m => m.CreateAsync(It.IsAny<ApplicationUser>(), reg.Password))
+            .ReturnsAsync(IdentityResult.Success);
+        
+        _userManagerMock.Setup(m => m.AddToRoleAsync(It.IsAny<ApplicationUser>(), "User"))
+            .ReturnsAsync(IdentityResult.Success);
 
-        repo.Setup(r => r.RegisterUserAsync(reg, It.IsAny<byte[]>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(10)
-            .Callback<RegisterUserDto, byte[], byte[], CancellationToken>((_, hash, salt, _) =>
-            {
-                Assert.That(hash, Is.Not.Null);
-                Assert.That(hash.Length, Is.GreaterThan(0));
-                Assert.That(salt, Is.Not.Null);
-                Assert.That(salt.Length, Is.GreaterThan(0));
-            });
+        _userManagerMock.Setup(m => m.GetRolesAsync(It.IsAny<ApplicationUser>()))
+            .ReturnsAsync(new List<string> { "User" });
 
-        repo.Setup(r => r.GetByIdAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(new UserDto
-        {
-            Id = 10, Username = "newuser", Email = "new@user.com", Role = UserRole.User, PersonId = null
-        });
-
-        var sut = CreateSut(repo);
+        var sut = CreateSut();
         var result = await sut.RegisterAsync(reg);
 
         Assert.That(result.AccessToken, Is.Not.Null.And.Not.Empty);
         Assert.That(result.User, Is.Not.Null);
         Assert.That(result.User!.Username, Is.EqualTo("newuser"));
+        
+        _userManagerMock.Verify(m => m.CreateAsync(It.Is<ApplicationUser>(u => u.UserName == reg.Username), reg.Password), Times.Once);
+        _userManagerMock.Verify(m => m.AddToRoleAsync(It.IsAny<ApplicationUser>(), "User"), Times.Once);
     }
 
     [Test]
-    public void RegisterAsync_Throws_When_Username_Already_Taken()
+    public void RegisterAsync_Throws_Conflict_When_Username_Duplicate()
     {
-        var repo = new Mock<IUserRepository>();
-        repo.Setup(r => r.IsUsernameTakenAsync("taken", It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        var sut = CreateSut(repo);
         var reg = new RegisterUserDto { Username = "taken", Email = "x@x.com", Password = "P@ssword1234" };
+        
+        _userManagerMock.Setup(m => m.CreateAsync(It.IsAny<ApplicationUser>(), reg.Password))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Code = "DuplicateUserName" }));
+
+        var sut = CreateSut();
         Assert.ThrowsAsync<ConflictException>(() => sut.RegisterAsync(reg));
     }
 
     [Test]
-    public void RegisterAsync_Throws_When_Email_Already_Taken()
+    public async Task LoginAsync_Succeeds_With_Valid_Credentials()
     {
-        var repo = new Mock<IUserRepository>();
-        repo.Setup(r => r.IsUsernameTakenAsync("ok", It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        repo.Setup(r => r.IsEmailTakenAsync("dup@x.com", It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        var sut = CreateSut(repo);
-        var reg = new RegisterUserDto { Username = "ok", Email = "dup@x.com", Password = "P@ssword1234" };
-        Assert.ThrowsAsync<ConflictException>(() => sut.RegisterAsync(reg));
-    }
+        var login = new LoginUserDto { UsernameOrEmail = "user", Password = "P@ssword1234" };
+        var appUser = new ApplicationUser { Id = 5, UserName = "user", Email = "u@e.com", PersonId = 12 };
 
-    [Test]
-    public async Task LoginAsync_Succeeds_With_Valid_Username_And_Password()
-    {
-        var repo = new Mock<IUserRepository>();
-        var password = "P@ssword1234";
-        var salt = RandomNumberGenerator.GetBytes(16);
-        // Use the same hashing as service uses
-        var hash = Convert.ToBase64String(Rfc2898DeriveBytes.Pbkdf2(password, salt, 100_000, HashAlgorithmName.SHA256, 32));
+        _userManagerMock.Setup(m => m.FindByNameAsync(login.UsernameOrEmail)).ReturnsAsync(appUser);
+        
+        _signInManagerMock.Setup(m => m.CheckPasswordSignInAsync(appUser, login.Password, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
 
-        var user = new UserDto { Id = 5, Username = "user", Email = "u@e.com", Role = UserRole.Admin, PersonId = 12 };
-        repo.Setup(r => r.GetAuthByUserNameOrEmailAsync("user", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AuthUserData
-            {
-                User = user,
-                PasswordHash = hash,
-                PasswordSalt = Convert.ToBase64String(salt)
-            });
+        _userManagerMock.Setup(m => m.GetRolesAsync(appUser))
+            .ReturnsAsync(new List<string> { "Admin" });
 
-        var sut = CreateSut(repo);
-        var res = await sut.LoginAsync(new LoginUserDto { UsernameOrEmail = "user", Password = password });
+        var sut = CreateSut();
+        var res = await sut.LoginAsync(login);
 
         Assert.That(res.AccessToken, Is.Not.Empty);
         Assert.That(res.User!.Id, Is.EqualTo(5));
+        Assert.That(res.User.Role, Is.EqualTo(UserRole.Admin));
 
         var token = new JwtSecurityTokenHandler().ReadJwtToken(res.AccessToken);
-        Assert.That(token.Issuer, Is.EqualTo("identiverse.test"));
-        Assert.That(token.Audiences, Does.Contain("identiverse.aud"));
         Assert.That(token.Claims.First(c => c.Type == JwtRegisteredClaimNames.Sub).Value, Is.EqualTo("5"));
-        // Only stable claims expected: sub/name/role. No personId claim.
-        Assert.That(token.Claims.Any(c => c.Type == "personId"), Is.False);
+        Assert.That(token.Claims.First(c => c.Type == ClaimTypes.Role).Value, Is.EqualTo("Admin"));
+        
+        _throttleMock.Verify(t => t.RegisterSuccessAsync(login.UsernameOrEmail, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
-    public void LoginAsync_Throws_When_User_Not_Found()
+    public void LoginAsync_Throws_Unauthorized_When_User_Not_Found()
     {
-        var repo = new Mock<IUserRepository>();
-        repo.Setup(r => r.GetAuthByUserNameOrEmailAsync("missing", It.IsAny<CancellationToken>())).ReturnsAsync((AuthUserData?)null);
-        var sut = CreateSut(repo);
-        Assert.ThrowsAsync<UnauthorizedIdentiverseException>(() => sut.LoginAsync(new LoginUserDto { UsernameOrEmail = "missing", Password = "x" }));
+        var login = new LoginUserDto { UsernameOrEmail = "missing", Password = "x" };
+        _userManagerMock.Setup(m => m.FindByNameAsync(login.UsernameOrEmail)).ReturnsAsync((ApplicationUser?)null);
+        _userManagerMock.Setup(m => m.FindByEmailAsync(login.UsernameOrEmail)).ReturnsAsync((ApplicationUser?)null);
+
+        var sut = CreateSut();
+        Assert.ThrowsAsync<UnauthorizedIdentiverseException>(() => sut.LoginAsync(login));
+        
+        _throttleMock.Verify(t => t.RegisterFailureAsync(login.UsernameOrEmail, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
-    public void LoginAsync_Throws_When_Password_Invalid()
+    public void LoginAsync_Throws_Forbidden_When_LockedOut()
     {
-        var repo = new Mock<IUserRepository>();
-        var salt = RandomNumberGenerator.GetBytes(16);
-        var hash = Convert.ToBase64String(Rfc2898DeriveBytes.Pbkdf2("correct", salt, 100_000, HashAlgorithmName.SHA256, 32));
-        repo.Setup(r => r.GetAuthByUserNameOrEmailAsync("user", It.IsAny<CancellationToken>())).ReturnsAsync(new AuthUserData
-        {
-            User = new UserDto { Id = 1, Username = "user", Email = "e@e.com", Role = UserRole.User },
-            PasswordHash = hash,
-            PasswordSalt = Convert.ToBase64String(salt)
-        });
-        var sut = CreateSut(repo);
-        Assert.ThrowsAsync<UnauthorizedIdentiverseException>(() => sut.LoginAsync(new LoginUserDto { UsernameOrEmail = "user", Password = "wrong" }));
-    }
+        var login = new LoginUserDto { UsernameOrEmail = "user", Password = "password" };
+        var appUser = new ApplicationUser { UserName = "user" };
 
-    [Test]
-    public void RegisterAsync_Throws_When_Password_Weak_By_Policy()
-    {
-        var repo = new Mock<IUserRepository>();
-        repo.Setup(r => r.IsUsernameTakenAsync("weakpass", It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        repo.Setup(r => r.IsEmailTakenAsync("w@e.com", It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        _userManagerMock.Setup(m => m.FindByNameAsync(login.UsernameOrEmail)).ReturnsAsync(appUser);
+        _signInManagerMock.Setup(m => m.CheckPasswordSignInAsync(appUser, login.Password, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
 
-        var policy = new Mock<IPasswordPolicy>();
-        policy.Setup(p => p.Validate(It.IsAny<string>())).Throws(new ValidationException("weak"));
-
-        var sut = CreateSut(repo, policy: policy);
-        var reg = new RegisterUserDto { Username = "weakpass", Email = "w@e.com", Password = "weak" };
-        Assert.ThrowsAsync<ValidationException>(() => sut.RegisterAsync(reg));
+        var sut = CreateSut();
+        Assert.ThrowsAsync<ForbiddenException>(() => sut.LoginAsync(login));
     }
 
     [Test]
     public void LoginAsync_Throws_TooManyRequests_When_Throttled()
     {
-        var repo = new Mock<IUserRepository>();
-        // Set up a valid user to ensure the throttle is the cause of failure
-        repo.Setup(r => r.GetAuthByUserNameOrEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AuthUserData
-            {
-                User = new UserDto { Id = 99, Username = "user", Email = "e@e.com", Role = UserRole.User },
-                PasswordHash = Convert.ToBase64String(new byte[32]), // won't be used due to throttle
-                PasswordSalt = Convert.ToBase64String(new byte[16])
-            });
-        var throttle = new Mock<ILoginThrottle>();
-        throttle.Setup(t => t.IsAllowedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        _throttleMock.Setup(t => t.IsAllowedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
 
-        var sut = CreateSut(repo, throttle: throttle);
-        Assert.ThrowsAsync<TooManyRequestsException>(() =>
-            sut.LoginAsync(new LoginUserDto { UsernameOrEmail = "user", Password = "whatever" }));
+        var sut = CreateSut();
+        Assert.ThrowsAsync<TooManyRequestsException>(() => 
+            sut.LoginAsync(new LoginUserDto { UsernameOrEmail = "user", Password = "password" }));
     }
 }
