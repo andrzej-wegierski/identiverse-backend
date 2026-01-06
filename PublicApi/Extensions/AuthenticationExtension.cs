@@ -1,10 +1,14 @@
 using System.Text;
+using Database;
+using Database.Entities;
 using Domain.Models;
 using Domain.Security;
 using identiverse_backend.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using PasswordOptions = Domain.Models.PasswordOptions;
 
 namespace identiverse_backend.Extensions;
 
@@ -14,6 +18,20 @@ public static class AuthenticationExtension
     {
         services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
         services.Configure<PasswordOptions>(configuration.GetSection("Password"));
+        
+        services.AddIdentityCore<ApplicationUser>(options =>
+        {
+            options.Password.RequireDigit = true;
+            options.Password.RequireLowercase = true;
+            options.Password.RequireUppercase = true;
+            options.Password.RequireNonAlphanumeric = true;
+            options.Password.RequiredLength = 10;
+            
+            options.User.RequireUniqueEmail = true;
+        })
+        .AddRoles<IdentityRole<int>>()
+        .AddEntityFrameworkStores<IdentiverseDbContext>()
+        .AddDefaultTokenProviders();
         
         var jwtSection = configuration.GetSection("Jwt");
         var keyBytes = JwtKeyParser.GetSigningKeyBytes(jwtSection["SigningKey"]!);
