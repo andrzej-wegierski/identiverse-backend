@@ -35,6 +35,11 @@ public class RegisterUserDto
 
 public class LoginUserDto
 {
+    [Required(ErrorMessage = "Username or email is required.")]
+    [MinLength(5, ErrorMessage = "Username or email must be at least 5 characters long.")]
     public string UsernameOrEmail { get; init; } = string.Empty;
+    
+    [Required(ErrorMessage = "Password is required.")]
+    [MinLength(10, ErrorMessage = "Password must be at least 10 characters long.")]
     public string Password { get; init; } = string.Empty;
 }
