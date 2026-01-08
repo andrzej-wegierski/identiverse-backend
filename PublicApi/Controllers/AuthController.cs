@@ -50,7 +50,7 @@ public class AuthController : ControllerBase
         return Ok(new { Message = "Password has been reset successfully!" });
     }
 
-    [HttpPost("resent-confirm-email")]
+    [HttpPost("resend-confirm-email")]
     [AllowAnonymous]
     public async Task<IActionResult> ResendConfirmationEmail([FromBody] ResendConfirmationDto dto, CancellationToken ct)
     {
