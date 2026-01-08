@@ -100,6 +100,12 @@ public class AuthService : IAuthService
             await _throttle.RegisterFailureAsync(user.UsernameOrEmail, ct);
             throw new UnauthorizedIdentiverseException("Invalid username or password");
         }
+
+        if (!await _userManager.IsEmailConfirmedAsync(appUser))
+        {
+            await _throttle.RegisterFailureAsync(user.UsernameOrEmail, ct);
+            throw new ForbiddenException("Email is not confirmed");
+        }
         
         await _throttle.RegisterSuccessAsync(user.UsernameOrEmail, ct);
         

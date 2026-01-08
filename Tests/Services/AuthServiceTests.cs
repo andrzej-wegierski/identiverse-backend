@@ -119,6 +119,8 @@ public class AuthServiceTests
         _signInManagerMock.Setup(m => m.CheckPasswordSignInAsync(appUser, login.Password, true))
             .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
 
+        _userManagerMock.Setup(m => m.IsEmailConfirmedAsync(appUser)).ReturnsAsync(true);
+
         _userManagerMock.Setup(m => m.GetRolesAsync(appUser))
             .ReturnsAsync(new List<string> { "Admin" });
 
@@ -161,6 +163,24 @@ public class AuthServiceTests
 
         var sut = CreateSut();
         Assert.ThrowsAsync<ForbiddenException>(() => sut.LoginAsync(login));
+    }
+
+    [Test]
+    public void LoginAsync_Throws_Forbidden_When_Email_Not_Confirmed()
+    {
+        var login = new LoginUserDto { UsernameOrEmail = "user", Password = "password" };
+        var appUser = new ApplicationUser { UserName = "user" };
+
+        _userManagerMock.Setup(m => m.FindByNameAsync(login.UsernameOrEmail)).ReturnsAsync(appUser);
+        _signInManagerMock.Setup(m => m.CheckPasswordSignInAsync(appUser, login.Password, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
+        _userManagerMock.Setup(m => m.IsEmailConfirmedAsync(appUser)).ReturnsAsync(false);
+
+        var sut = CreateSut();
+        var ex = Assert.ThrowsAsync<ForbiddenException>(() => sut.LoginAsync(login));
+        Assert.That(ex!.Message, Is.EqualTo("Email is not confirmed"));
+        
+        _throttleMock.Verify(t => t.RegisterFailureAsync(login.UsernameOrEmail, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
