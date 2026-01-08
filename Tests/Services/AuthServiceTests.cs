@@ -305,6 +305,28 @@ public class AuthServiceTests
         // Act & Assert
         Assert.ThrowsAsync<ValidationException>(async () => await sut.ResetPasswordAsync(dto));
     }
+
+    [Test]
+    public void ResetPasswordAsync_WhenTokenInvalidBase64_ThrowsValidationException()
+    {
+        // Arrange
+        var dto = new ResetPasswordDto
+        {
+            Email = "user@example.com",
+            Token = "not-base64url!!",
+            NewPassword = "NewSecurePassword123!"
+        };
+        var user = new ApplicationUser { Email = dto.Email };
+
+        _userManagerMock.Setup(u => u.FindByEmailAsync(dto.Email))
+            .ReturnsAsync(user);
+
+        var sut = CreateSut();
+
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<ValidationException>(async () => await sut.ResetPasswordAsync(dto));
+        Assert.That(ex!.Message, Is.EqualTo("Invalid request"));
+    }
     
      [Test]
     public async Task ResendConfirmationEmailAsync_WhenUserExistsAndUnconfirmed_SendsToken()
@@ -437,5 +459,26 @@ public class AuthServiceTests
 
         // Act & Assert
         Assert.ThrowsAsync<ValidationException>(async () => await sut.ConfirmEmailAsync(dto));
+    }
+
+    [Test]
+    public void ConfirmEmailAsync_WhenTokenInvalidBase64_ThrowsValidationException()
+    {
+        // Arrange
+        var dto = new ConfirmEmailDto
+        {
+            Email = "user@example.com",
+            Token = "not-base64url!!"
+        };
+        var user = new ApplicationUser { Email = dto.Email };
+
+        _userManagerMock.Setup(u => u.FindByEmailAsync(dto.Email))
+            .ReturnsAsync(user);
+
+        var sut = CreateSut();
+
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<ValidationException>(async () => await sut.ConfirmEmailAsync(dto));
+        Assert.That(ex!.Message, Is.EqualTo("Invalid request"));
     }
 }

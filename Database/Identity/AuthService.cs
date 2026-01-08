@@ -128,8 +128,7 @@ public class AuthService : IAuthService
         if (user is null)
             throw new ValidationException("Invalid request");
 
-        var decodedTokenBytes = WebEncoders.Base64UrlDecode(dto.Token);
-        var decodedToken = Encoding.UTF8.GetString(decodedTokenBytes);
+        var decodedToken = DecodeToken(dto.Token);
 
         var result = await _userManager.ResetPasswordAsync(user, decodedToken, dto.NewPassword);
         if (!result.Succeeded)
@@ -157,12 +156,24 @@ public class AuthService : IAuthService
         if (user is null)
             throw new ValidationException("Invalid request");
 
-        var decodedTokenBytes = WebEncoders.Base64UrlDecode(dto.Token);
-        var decodedToken = Encoding.UTF8.GetString(decodedTokenBytes);
+        var decodedToken = DecodeToken(dto.Token);
         
         var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
         if (!result.Succeeded)
             throw new ValidationException("Failed to confirm email.");
+    }
+
+    private string DecodeToken(string token)
+    {
+        try
+        {
+            var decodedTokenBytes = WebEncoders.Base64UrlDecode(token);
+            return Encoding.UTF8.GetString(decodedTokenBytes);
+        }
+        catch (Exception)
+        {
+            throw new ValidationException("Invalid request");
+        }
     }
 
     private async Task<UserDto> MapToDtoAsync(ApplicationUser user)
