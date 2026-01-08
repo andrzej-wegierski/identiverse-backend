@@ -256,4 +256,61 @@ public class AuthServiceTests
         _emailSenderMock.Verify(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         _userManagerMock.Verify(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<ApplicationUser>()), Times.Never);
     }
+
+    [Test]
+    public async Task ConfirmEmailAsync_WhenValidRequest_Succeeds()
+    {
+        // Arrange
+        var dto = new ConfirmEmailDto
+        {
+            Email = "user@example.com",
+            Token = "valid-token"
+        };
+        var user = new ApplicationUser { Email = dto.Email };
+
+        _userManagerMock.Setup(u => u.FindByEmailAsync(dto.Email))
+            .ReturnsAsync(user);
+        _userManagerMock.Setup(u => u.ConfirmEmailAsync(user, dto.Token))
+            .ReturnsAsync(IdentityResult.Success);
+
+        var sut = CreateSut();
+
+        // Act & Assert
+        await sut.ConfirmEmailAsync(dto); // Should not throw
+
+        _userManagerMock.Verify(u => u.ConfirmEmailAsync(user, dto.Token), Times.Once);
+    }
+
+    [Test]
+    public void ConfirmEmailAsync_WhenUserNotFound_ThrowsValidationException()
+    {
+        // Arrange
+        var dto = new ConfirmEmailDto { Email = "nonexistent@example.com", Token = "any" };
+        _userManagerMock.Setup(u => u.FindByEmailAsync(dto.Email))
+            .ReturnsAsync((ApplicationUser?)null);
+
+        var sut = CreateSut();
+
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<ValidationException>(async () => await sut.ConfirmEmailAsync(dto));
+        Assert.That(ex!.Message, Is.EqualTo("Invalid request"));
+    }
+
+    [Test]
+    public void ConfirmEmailAsync_WhenIdentityFails_ThrowsValidationException()
+    {
+        // Arrange
+        var dto = new ConfirmEmailDto { Email = "user@example.com", Token = "invalid" };
+        var user = new ApplicationUser { Email = dto.Email };
+
+        _userManagerMock.Setup(u => u.FindByEmailAsync(dto.Email))
+            .ReturnsAsync(user);
+        _userManagerMock.Setup(u => u.ConfirmEmailAsync(user, dto.Token))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Invalid token." }));
+
+        var sut = CreateSut();
+
+        // Act & Assert
+        Assert.ThrowsAsync<ValidationException>(async () => await sut.ConfirmEmailAsync(dto));
+    }
 }

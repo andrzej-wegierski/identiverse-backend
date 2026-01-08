@@ -145,6 +145,17 @@ public class AuthService : IAuthService
             $"Please confirm your account by using this token: {token}");
     }
 
+    public async Task ConfirmEmailAsync(ConfirmEmailDto dto, CancellationToken ct = default)
+    { 
+        var user = await _userManager.FindByEmailAsync(dto.Email);
+        if (user is null)
+            throw new ValidationException("Invalid request");
+        
+        var result = await _userManager.ConfirmEmailAsync(user, dto.Token);
+        if (!result.Succeeded)
+            throw new ValidationException("Failed to confirm email.");
+    }
+
     private async Task<UserDto> MapToDtoAsync(ApplicationUser user)
     {
         var roles = await _userManager.GetRolesAsync(user);

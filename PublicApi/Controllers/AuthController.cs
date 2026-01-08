@@ -57,4 +57,12 @@ public class AuthController : ControllerBase
         await _auth.ResendConfirmationEmailAsync(dto, ct);
         return Ok(new { Message = "Please check your email for confirmation link" });
     }
+
+    [HttpPost("confirm-email")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailDto dto, CancellationToken ct)
+    {
+        await _auth.ConfirmEmailAsync(dto, ct);
+        return Ok(new { Message = "Email confirmed successfully. You can now log in" });
+    }
 }
