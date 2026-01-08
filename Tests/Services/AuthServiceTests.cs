@@ -22,6 +22,7 @@ public class AuthServiceTests
     private Mock<SignInManager<ApplicationUser>> _signInManagerMock = null!;
     private readonly Mock<IEmailSender> _emailSenderMock = new();
     private readonly Mock<ILoginThrottle> _throttleMock = new();
+    private readonly Mock<IEmailThrottle> _emailThrottleMock = new();
     private readonly Mock<IConfiguration> _configurationMock = new();
     private IOptions<JwtOptions> _jwtOptions = null!;
 
@@ -50,11 +51,13 @@ public class AuthServiceTests
         _configurationMock.Setup(c => c["IdentiverseFrontendBaseUrl"]).Returns("https://localhost:3000");
 
         _throttleMock.Setup(t => t.IsAllowedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _emailThrottleMock.Setup(t => t.IsAllowedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
         
         _userManagerMock.Invocations.Clear();
         _signInManagerMock.Invocations.Clear();
         _emailSenderMock.Invocations.Clear();
         _throttleMock.Invocations.Clear();
+        _emailThrottleMock.Invocations.Clear();
     }
 
     private AuthService CreateSut()
@@ -64,6 +67,7 @@ public class AuthServiceTests
             _signInManagerMock.Object,
             _jwtOptions,
             _throttleMock.Object,
+            _emailThrottleMock.Object,
             _emailSenderMock.Object,
             _configurationMock.Object);
     }
@@ -221,6 +225,28 @@ public class AuthServiceTests
             "Reset Password", 
             It.Is<string>(s => s.Contains(encodedToken))), 
             Times.Once);
+        
+        _emailThrottleMock.Verify(t => t.RegisterAttemptAsync(email, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task ForgotPasswordAsync_WhenThrottled_DoesNotSendEmail()
+    {
+        // Arrange
+        var email = "user@example.com";
+        var dto = new ForgotPasswordDto { Email = email };
+
+        _emailThrottleMock.Setup(t => t.IsAllowedAsync(email, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var sut = CreateSut();
+
+        // Act
+        await sut.ForgotPasswordAsync(dto);
+
+        // Assert
+        _emailSenderMock.Verify(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _emailThrottleMock.Verify(t => t.RegisterAttemptAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Test]
@@ -376,6 +402,28 @@ public class AuthServiceTests
             "Confirm your email", 
             It.Is<string>(s => s.Contains(encodedToken))), 
             Times.Once);
+
+        _emailThrottleMock.Verify(t => t.RegisterAttemptAsync(email, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task ResendConfirmationEmailAsync_WhenThrottled_DoesNotSendEmail()
+    {
+        // Arrange
+        var email = "user@example.com";
+        var dto = new ResendConfirmationDto { Email = email };
+
+        _emailThrottleMock.Setup(t => t.IsAllowedAsync(email, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var sut = CreateSut();
+
+        // Act
+        await sut.ResendConfirmationEmailAsync(dto);
+
+        // Assert
+        _emailSenderMock.Verify(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _emailThrottleMock.Verify(t => t.RegisterAttemptAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Test]

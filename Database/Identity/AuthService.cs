@@ -20,6 +20,7 @@ public class AuthService : IAuthService
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly JwtOptions _jwt;
     private readonly ILoginThrottle _throttle;
+    private readonly IEmailThrottle _emailThrottle;
     private readonly IEmailSender _emailSender;
     private readonly IConfiguration _configuration;
 
@@ -27,7 +28,8 @@ public class AuthService : IAuthService
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
         IOptions<JwtOptions> jwtOptions,
-        ILoginThrottle throttle, 
+        ILoginThrottle throttle,
+        IEmailThrottle emailThrottle,
         IEmailSender emailSender,
         IConfiguration configuration)
     {
@@ -35,6 +37,7 @@ public class AuthService : IAuthService
         _signInManager = signInManager;
         _jwt = jwtOptions.Value;
         _throttle = throttle;
+        _emailThrottle = emailThrottle;
         _emailSender = emailSender;
         _configuration = configuration;
     }
@@ -115,10 +118,15 @@ public class AuthService : IAuthService
 
     public async Task ForgotPasswordAsync(ForgotPasswordDto dto, CancellationToken ct = default)
     {
+        if (!await _emailThrottle.IsAllowedAsync(dto.Email, ct))
+            return;
+
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user is null || !(await _userManager.IsEmailConfirmedAsync(user)))
             return;
         
+        await _emailThrottle.RegisterAttemptAsync(dto.Email, ct);
+
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         var link = GenerateLink("reset-password", user.Email!, token);
         
@@ -143,10 +151,15 @@ public class AuthService : IAuthService
 
     public async Task ResendConfirmationEmailAsync(ResendConfirmationDto dto, CancellationToken ct = default)
     {
+        if (!await _emailThrottle.IsAllowedAsync(dto.Email, ct))
+            return;
+
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user is null || await _userManager.IsEmailConfirmedAsync(user))
             return;
         
+        await _emailThrottle.RegisterAttemptAsync(dto.Email, ct);
+
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var link = GenerateLink("confirm-email", user.Email!, token);
         
