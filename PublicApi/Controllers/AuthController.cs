@@ -1,6 +1,5 @@
 using Domain.Abstractions;
 using Domain.Models;
-using Domain.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -44,5 +43,13 @@ public class AuthController : ControllerBase
     {
         await _auth.ForgotPasswordAsync(dto, ct);
         return Ok(new { Message = "Please check your email for password reset link" });
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto, CancellationToken ct)
+    {
+        await _auth.ResetPasswordAsync(dto, ct);
+        return Ok(new { Message = "Password has been reset successfully!" });
     }
 }

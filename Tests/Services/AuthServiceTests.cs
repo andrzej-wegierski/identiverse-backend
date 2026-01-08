@@ -1,6 +1,7 @@
 using Database.Entities;
 using Database.Identity;
 using Domain.Abstractions;
+using Domain.Exceptions;
 using Domain.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -116,5 +117,63 @@ public class AuthServiceTests
 
         // Assert
         _emailSenderMock.Verify(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+    
+      [Test]
+    public async Task ResetPasswordAsync_WhenValidRequest_Succeeds()
+    {
+        // Arrange
+        var dto = new ResetPasswordDto 
+        { 
+            Email = "user@example.com", 
+            Token = "valid-token", 
+            NewPassword = "NewSecurePassword123!" 
+        };
+        var user = new ApplicationUser { Email = dto.Email };
+
+        _userManagerMock.Setup(u => u.FindByEmailAsync(dto.Email))
+            .ReturnsAsync(user);
+        _userManagerMock.Setup(u => u.ResetPasswordAsync(user, dto.Token, dto.NewPassword))
+            .ReturnsAsync(IdentityResult.Success);
+
+        var sut = CreateSut();
+
+        // Act & Assert
+        await sut.ResetPasswordAsync(dto); // Should not throw
+        
+        _userManagerMock.Verify(u => u.ResetPasswordAsync(user, dto.Token, dto.NewPassword), Times.Once);
+    }
+
+    [Test]
+    public void ResetPasswordAsync_WhenUserNotFound_ThrowsValidationException()
+    {
+        // Arrange
+        var dto = new ResetPasswordDto { Email = "nonexistent@example.com", Token = "any", NewPassword = "any" };
+        _userManagerMock.Setup(u => u.FindByEmailAsync(dto.Email))
+            .ReturnsAsync((ApplicationUser?)null);
+        
+        var sut = CreateSut();
+
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<ValidationException>(async () => await sut.ResetPasswordAsync(dto));
+        Assert.That(ex!.Message, Is.EqualTo("Invalid request"));
+    }
+
+    [Test]
+    public void ResetPasswordAsync_WhenIdentityFails_ThrowsValidationException()
+    {
+        // Arrange
+        var dto = new ResetPasswordDto { Email = "user@example.com", Token = "invalid", NewPassword = "Password123!" };
+        var user = new ApplicationUser { Email = dto.Email };
+
+        _userManagerMock.Setup(u => u.FindByEmailAsync(dto.Email))
+            .ReturnsAsync(user);
+        _userManagerMock.Setup(u => u.ResetPasswordAsync(user, dto.Token, dto.NewPassword))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Invalid token." }));
+
+        var sut = CreateSut();
+
+        // Act & Assert
+        Assert.ThrowsAsync<ValidationException>(async () => await sut.ResetPasswordAsync(dto));
     }
 }

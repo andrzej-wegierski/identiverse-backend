@@ -110,6 +110,17 @@ public class AuthService : IAuthService
             $"Your reset token is: {token}");
     }
 
+    public async Task ResetPasswordAsync(ResetPasswordDto dto, CancellationToken ct = default)
+    {
+        var user = await _userManager.FindByEmailAsync(dto.Email);
+        if (user is null)
+            throw new ValidationException("Invalid request");
+
+        var result = await _userManager.ResetPasswordAsync(user, dto.Token, dto.NewPassword);
+        if (!result.Succeeded)
+            throw new ValidationException("Failed to reset password.");
+    }
+
     private async Task<UserDto> MapToDtoAsync(ApplicationUser user)
     {
         var roles = await _userManager.GetRolesAsync(user);
