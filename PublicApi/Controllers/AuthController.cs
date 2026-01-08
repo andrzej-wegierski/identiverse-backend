@@ -11,16 +11,21 @@ namespace identiverse_backend.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _auth;
+    private readonly IEmailSender _emailSender;
 
-    public AuthController(IAuthService auth)
+    public AuthController(IAuthService auth, IEmailSender emailSender)
     {
         _auth = auth;
+        _emailSender = emailSender;
     }
 
     [HttpPost("register")]
     [AllowAnonymous]
     public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterUserDto dto, CancellationToken ct)
     {
+        // todo remove: Temporary call for verification
+        await _emailSender.SendEmailAsync(dto.Email, "Email confirmation", "Please confirm your email address");
+        
         var result = await  _auth.RegisterAsync(dto, ct);
         return Ok(result);
     } 
