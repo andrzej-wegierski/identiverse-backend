@@ -39,6 +39,15 @@ public class AuthServiceTests
         });
     }
 
+    [SetUp]
+    public void SetUp()
+    {
+        _userManagerMock.Invocations.Clear();
+        _signInManagerMock.Invocations.Clear();
+        _emailSenderMock.Invocations.Clear();
+        _throttleMock.Invocations.Clear();
+    }
+
     private AuthService CreateSut()
     {
         return new AuthService(
@@ -175,5 +184,76 @@ public class AuthServiceTests
 
         // Act & Assert
         Assert.ThrowsAsync<ValidationException>(async () => await sut.ResetPasswordAsync(dto));
+    }
+    
+     [Test]
+    public async Task ResendConfirmationEmailAsync_WhenUserExistsAndUnconfirmed_SendsToken()
+    {
+        // Arrange
+        var email = "unconfirmed@example.com";
+        var user = new ApplicationUser { Email = email };
+        var token = "confirm-token-123";
+        var dto = new ResendConfirmationDto { Email = email };
+
+        _userManagerMock.Setup(u => u.FindByEmailAsync(email))
+            .ReturnsAsync(user);
+        _userManagerMock.Setup(u => u.IsEmailConfirmedAsync(user))
+            .ReturnsAsync(false);
+        _userManagerMock.Setup(u => u.GenerateEmailConfirmationTokenAsync(user))
+            .ReturnsAsync(token);
+
+        var sut = CreateSut();
+
+        // Act
+        await sut.ResendConfirmationEmailAsync(dto);
+
+        // Assert
+        _emailSenderMock.Verify(e => e.SendEmailAsync(
+            email, 
+            "Confirm your email", 
+            It.Is<string>(s => s.Contains(token))), 
+            Times.Once);
+    }
+
+    [Test]
+    public async Task ResendConfirmationEmailAsync_WhenUserDoesNotExist_DoesNotSendEmail()
+    {
+        // Arrange
+        var email = "nonexistent@example.com";
+        _userManagerMock.Setup(u => u.FindByEmailAsync(email))
+            .ReturnsAsync((ApplicationUser?)null);
+        
+        var dto = new ResendConfirmationDto { Email = email };
+        var sut = CreateSut();
+
+        // Act
+        await sut.ResendConfirmationEmailAsync(dto);
+
+        // Assert
+        _emailSenderMock.Verify(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _userManagerMock.Verify(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<ApplicationUser>()), Times.Never);
+    }
+
+    [Test]
+    public async Task ResendConfirmationEmailAsync_WhenUserAlreadyConfirmed_DoesNotSendEmail()
+    {
+        // Arrange
+        var email = "confirmed@example.com";
+        var user = new ApplicationUser { Email = email };
+        
+        _userManagerMock.Setup(u => u.FindByEmailAsync(email))
+            .ReturnsAsync(user);
+        _userManagerMock.Setup(u => u.IsEmailConfirmedAsync(user))
+            .ReturnsAsync(true);
+        
+        var dto = new ResendConfirmationDto { Email = email };
+        var sut = CreateSut();
+
+        // Act
+        await sut.ResendConfirmationEmailAsync(dto);
+
+        // Assert
+        _emailSenderMock.Verify(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _userManagerMock.Verify(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<ApplicationUser>()), Times.Never);
     }
 }

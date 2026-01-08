@@ -6,10 +6,10 @@ public class ResetPasswordDto
 {
     [Required]
     [EmailAddress]
-    public required string Email { get; init; } = string.Empty;
+    public required string Email { get; init; } 
     
     [Required]
-    public required string Token { get; init; } = string.Empty;
+    public required string Token { get; init; }
     
     [Required]
     [MinLength(10, ErrorMessage = "Password must be at least 10 characters long.")]

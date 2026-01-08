@@ -22,9 +22,6 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterUserDto dto, CancellationToken ct)
     {
-        // todo remove: Temporary call for verification
-        await _emailSender.SendEmailAsync(dto.Email, "Email confirmation", "Please confirm your email address");
-        
         var result = await  _auth.RegisterAsync(dto, ct);
         return Ok(result);
     } 
@@ -51,5 +48,13 @@ public class AuthController : ControllerBase
     {
         await _auth.ResetPasswordAsync(dto, ct);
         return Ok(new { Message = "Password has been reset successfully!" });
+    }
+
+    [HttpPost("resent-confirm-email")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResendConfirmationEmail([FromBody] ResendConfirmationDto dto, CancellationToken ct)
+    {
+        await _auth.ResendConfirmationEmailAsync(dto, ct);
+        return Ok(new { Message = "Please check your email for confirmation link" });
     }
 }

@@ -58,6 +58,16 @@ public class AuthService : IAuthService
         
         await _userManager.AddToRoleAsync(appUser, "User");
         
+        var confirmToken = await _userManager.GenerateEmailConfirmationTokenAsync(appUser);
+        
+        // todo generate confirmation link
+        // var confirmationLink = $"{_frontendOptions.BaseUrl}/confirm-email?email={user.Email}&token={WebUtility.UrlEncode(confirmToken)}";
+        
+        await _emailSender.SendEmailAsync(
+            user.Email!,
+            "Confirm your email",
+            $"Please confirm your account by using this token: {confirmToken}");
+        
         var userDto = await MapToDtoAsync(appUser);
         return CreateAuthResponse(userDto);
     }
@@ -119,6 +129,20 @@ public class AuthService : IAuthService
         var result = await _userManager.ResetPasswordAsync(user, dto.Token, dto.NewPassword);
         if (!result.Succeeded)
             throw new ValidationException("Failed to reset password.");
+    }
+
+    public async Task ResendConfirmationEmailAsync(ResendConfirmationDto dto, CancellationToken ct = default)
+    {
+        var user = await _userManager.FindByEmailAsync(dto.Email);
+        if (user is null || await _userManager.IsEmailConfirmedAsync(user))
+            return;
+        
+        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        
+        await _emailSender.SendEmailAsync(
+            user.Email!,
+            "Confirm your email",
+            $"Please confirm your account by using this token: {token}");
     }
 
     private async Task<UserDto> MapToDtoAsync(ApplicationUser user)
