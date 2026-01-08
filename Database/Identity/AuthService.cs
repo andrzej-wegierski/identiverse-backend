@@ -1,11 +1,14 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text;
 using Database.Entities;
 using Domain.Abstractions;
 using Domain.Exceptions;
 using Domain.Models;
 using Domain.Security;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -18,19 +21,22 @@ public class AuthService : IAuthService
     private readonly JwtOptions _jwt;
     private readonly ILoginThrottle _throttle;
     private readonly IEmailSender _emailSender;
+    private readonly IConfiguration _configuration;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
         IOptions<JwtOptions> jwtOptions,
         ILoginThrottle throttle, 
-        IEmailSender emailSender)
+        IEmailSender emailSender,
+        IConfiguration configuration)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _jwt = jwtOptions.Value;
         _throttle = throttle;
         _emailSender = emailSender;
+        _configuration = configuration;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterUserDto user, CancellationToken ct = default)
@@ -59,14 +65,12 @@ public class AuthService : IAuthService
         await _userManager.AddToRoleAsync(appUser, "User");
         
         var confirmToken = await _userManager.GenerateEmailConfirmationTokenAsync(appUser);
-        
-        // todo generate confirmation link
-        // var confirmationLink = $"{_frontendOptions.BaseUrl}/confirm-email?email={user.Email}&token={WebUtility.UrlEncode(confirmToken)}";
+        var link = GenerateLink("confirm-email", appUser.Email!, confirmToken);
         
         await _emailSender.SendEmailAsync(
             user.Email!,
             "Confirm your email",
-            $"Please confirm your account by using this token: {confirmToken}");
+            $"Please confirm your account by clicking here: {link}");
         
         var userDto = await MapToDtoAsync(appUser);
         return CreateAuthResponse(userDto);
@@ -110,14 +114,12 @@ public class AuthService : IAuthService
             return;
         
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        
-        // todo generate reset link
-        // var resetLink = $"{_frontendOptions.BaseUrl}/reset-password?email={user.Email}&token={WebUtility.UrlEncode(token)}";
+        var link = GenerateLink("reset-password", user.Email!, token);
         
         await _emailSender.SendEmailAsync(
             user.Email!,
             "Reset Password",
-            $"Your reset token is: {token}");
+            $"Reset your password by clicking here: {link}");
     }
 
     public async Task ResetPasswordAsync(ResetPasswordDto dto, CancellationToken ct = default)
@@ -126,7 +128,10 @@ public class AuthService : IAuthService
         if (user is null)
             throw new ValidationException("Invalid request");
 
-        var result = await _userManager.ResetPasswordAsync(user, dto.Token, dto.NewPassword);
+        var decodedTokenBytes = WebEncoders.Base64UrlDecode(dto.Token);
+        var decodedToken = Encoding.UTF8.GetString(decodedTokenBytes);
+
+        var result = await _userManager.ResetPasswordAsync(user, decodedToken, dto.NewPassword);
         if (!result.Succeeded)
             throw new ValidationException("Failed to reset password.");
     }
@@ -138,11 +143,12 @@ public class AuthService : IAuthService
             return;
         
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var link = GenerateLink("confirm-email", user.Email!, token);
         
         await _emailSender.SendEmailAsync(
             user.Email!,
             "Confirm your email",
-            $"Please confirm your account by using this token: {token}");
+            $"Please confirm your account by clicking here: {link}");
     }
 
     public async Task ConfirmEmailAsync(ConfirmEmailDto dto, CancellationToken ct = default)
@@ -150,8 +156,11 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user is null)
             throw new ValidationException("Invalid request");
+
+        var decodedTokenBytes = WebEncoders.Base64UrlDecode(dto.Token);
+        var decodedToken = Encoding.UTF8.GetString(decodedTokenBytes);
         
-        var result = await _userManager.ConfirmEmailAsync(user, dto.Token);
+        var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
         if (!result.Succeeded)
             throw new ValidationException("Failed to confirm email.");
     }
@@ -199,6 +208,13 @@ public class AuthService : IAuthService
             Expires = expires,
             User = user
         };
+    }
+
+    private string GenerateLink(string endpoint, string email, string token)
+    {
+        var baseUrl = _configuration["IdentiverseFrontendBaseUrl"] ?? "https://localhost:3000";
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        return $"{baseUrl}/{endpoint}?email={Uri.EscapeDataString(email)}&token={encodedToken}";
     }
 
 }

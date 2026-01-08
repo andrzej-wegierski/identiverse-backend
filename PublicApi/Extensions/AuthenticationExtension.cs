@@ -31,6 +31,11 @@ public static class AuthenticationExtension
         .AddSignInManager()
         .AddEntityFrameworkStores<IdentiverseDbContext>()
         .AddDefaultTokenProviders();
+
+        services.Configure<DataProtectionTokenProviderOptions>(options =>
+        {
+            options.TokenLifespan = TimeSpan.FromHours(2);
+        });
         
         var jwtSection = configuration.GetSection("Jwt");
         var keyBytes = JwtKeyParser.GetSigningKeyBytes(jwtSection["SigningKey"]!);
