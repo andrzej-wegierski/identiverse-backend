@@ -1,15 +1,15 @@
-using System.Security.Claims;
-using Domain.Abstractions;
-using Domain.Models;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Database.Entities;
+using Domain.Abstractions;
 using Domain.Exceptions;
+using Domain.Models;
 using Domain.Security;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
-namespace Domain.Services;
+namespace Database.Identity;
 
 public class AuthService : IAuthService
 {
@@ -17,17 +17,20 @@ public class AuthService : IAuthService
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly JwtOptions _jwt;
     private readonly ILoginThrottle _throttle;
+    private readonly IEmailSender _emailSender;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
         IOptions<JwtOptions> jwtOptions,
-        ILoginThrottle throttle)
+        ILoginThrottle throttle, 
+        IEmailSender emailSender)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _jwt = jwtOptions.Value;
         _throttle = throttle;
+        _emailSender = emailSender;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterUserDto user, CancellationToken ct = default)
@@ -90,6 +93,23 @@ public class AuthService : IAuthService
         return CreateAuthResponse(userDto);
     }
 
+    public async Task ForgotPasswordAsync(ForgotPasswordDto dto, CancellationToken ct = default)
+    {
+        var user = await _userManager.FindByEmailAsync(dto.Email);
+        if (user is null || !(await _userManager.IsEmailConfirmedAsync(user)))
+            return;
+        
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        
+        // todo generate reset link
+        // var resetLink = $"{_frontendOptions.BaseUrl}/reset-password?email={user.Email}&token={WebUtility.UrlEncode(token)}";
+        
+        await _emailSender.SendEmailAsync(
+            user.Email!,
+            "Reset Password",
+            $"Your reset token is: {token}");
+    }
+
     private async Task<UserDto> MapToDtoAsync(ApplicationUser user)
     {
         var roles = await _userManager.GetRolesAsync(user);
@@ -100,7 +120,7 @@ public class AuthService : IAuthService
             Id = user.Id,
             Username = user.UserName ?? string.Empty,
             Email = user.Email ?? string.Empty,
-            Role = Enum.TryParse<Enums.UserRole>(primaryRole, ignoreCase: true, out var role) ? role : Enums.UserRole.User,
+            Role = Enum.TryParse<Domain.Enums.UserRole>(primaryRole, ignoreCase: true, out var role) ? role : Domain.Enums.UserRole.User,
             PersonId = user.PersonId
         };
     }

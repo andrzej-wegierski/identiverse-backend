@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Database.Entities;
+using Database.Identity;
 using Domain.Abstractions;
 using Domain.Enums;
 using Domain.Exceptions;
@@ -21,6 +22,7 @@ public class AuthServiceTests
     private Mock<SignInManager<ApplicationUser>> _signInManagerMock = null!;
     private Mock<ILoginThrottle> _throttleMock = null!;
     private IOptions<JwtOptions> _jwtOptions = null!;
+    private Mock<IEmailSender> _emailSender = null!;
 
     [SetUp]
     public void SetUp()
@@ -39,6 +41,8 @@ public class AuthServiceTests
         _throttleMock = new Mock<ILoginThrottle>();
         _throttleMock.Setup(t => t.IsAllowedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
+        _emailSender = new Mock<IEmailSender>();
+
         _jwtOptions = Options.Create(new JwtOptions
         {
             Issuer = "identiverse.test",
@@ -50,7 +54,7 @@ public class AuthServiceTests
 
     private AuthService CreateSut()
     {
-        return new AuthService(_userManagerMock.Object, _signInManagerMock.Object, _jwtOptions, _throttleMock.Object);
+        return new AuthService(_userManagerMock.Object, _signInManagerMock.Object, _jwtOptions, _throttleMock.Object, _emailSender.Object);
     }
 
     [Test]
