@@ -1,6 +1,8 @@
 using Database.Factories;
+using Database.Identity;
 using Database.Repositories;
 using Domain.Abstractions;
+using Domain.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,12 +21,14 @@ public static class AddDatabaseDependencyInjection
         // Repositories
         services.AddScoped<IPersonRepository, PersonRepository>();
         services.AddScoped<IIdentityProfileRepository, IdentityProfileRepository>();
-        services.AddScoped<IUserRepository, UserRepository>();
         
         // Factories
         services.AddScoped<IPersonFactory, PersonFactory>();
         services.AddScoped<IIdentityProfileFactory, IdentityProfileFactory>();
-        services.AddScoped<IUserFactory, UserFactory>();
+        
+        // Services
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IIdentityService, IdentityService>();
 
         return services;
     }

@@ -9,13 +9,13 @@ namespace Tests.Services;
 public class PersonServiceTests
 {
     private readonly Mock<IPersonRepository> _repo = new();
-    private readonly Mock<IUserRepository> _users = new();
+    private readonly Mock<IIdentityService> _identity = new();
     private readonly Mock<IAccessControlService> _access = new();
     private readonly Mock<ICurrentUserContext> _current = new();
     private PersonService CreateSut()
     {
         _repo.Invocations.Clear();
-        _users.Invocations.Clear();
+        _identity.Invocations.Clear();
         _access.Invocations.Clear();
         _current.Invocations.Clear();
 
@@ -23,7 +23,7 @@ public class PersonServiceTests
         _access.Setup(a => a.CanAccessPersonAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         _current.SetupGet(c => c.UserId).Returns(5);
-        return new PersonService(_repo.Object, _users.Object, _access.Object, _current.Object);
+        return new PersonService(_repo.Object, _identity.Object, _access.Object, _current.Object);
     }
 
     [Test]
@@ -117,9 +117,9 @@ public class PersonServiceTests
         _repo.Setup(r => r.CreatePersonAsync(input, It.IsAny<CancellationToken>()))
             .ReturnsAsync(created);
         _current.SetupGet(c => c.UserId).Returns(5);
-        _users.Setup(u => u.GetByIdAsync(5, It.IsAny<CancellationToken>()))
+        _identity.Setup(u => u.GetUserByIdAsync(5, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new UserDto { Id = 5, PersonId = null });
-        _users.Setup(u => u.SetPersonIdAsync(5, 123, It.IsAny<CancellationToken>()))
+        _identity.Setup(u => u.LinkPersonToUserAsync(5, 123, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         var sut = CreateSut();
@@ -127,7 +127,7 @@ public class PersonServiceTests
 
         Assert.That(result, Is.SameAs(created));
         _repo.Verify(r => r.CreatePersonAsync(input, It.IsAny<CancellationToken>()), Times.Once);
-        _users.Verify(u => u.SetPersonIdAsync(5, 123, It.IsAny<CancellationToken>()), Times.Once);
+        _identity.Verify(u => u.LinkPersonToUserAsync(5, 123, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
@@ -137,9 +137,9 @@ public class PersonServiceTests
         _repo.Setup(r => r.CreatePersonAsync(input, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PersonDto { Id = 7 });
         _current.SetupGet(c => c.UserId).Returns(9);
-        _users.Setup(u => u.GetByIdAsync(9, It.IsAny<CancellationToken>()))
+        _identity.Setup(u => u.GetUserByIdAsync(9, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new UserDto { Id = 9, PersonId = null });
-        _users.Setup(u => u.SetPersonIdAsync(9, 7, It.IsAny<CancellationToken>()))
+        _identity.Setup(u => u.LinkPersonToUserAsync(9, 7, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         var sut = CreateSut();
@@ -155,7 +155,7 @@ public class PersonServiceTests
         var existingUser = new UserDto { Id = userId, PersonId = 999 }; // Already has a Person
     
         _current.SetupGet(c => c.UserId).Returns(userId);
-        _users.Setup(u => u.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
+        _identity.Setup(u => u.GetUserByIdAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existingUser);
 
         var sut = CreateSut();
@@ -168,6 +168,6 @@ public class PersonServiceTests
     
         // Verify no side effects
         _repo.Verify(r => r.CreatePersonAsync(It.IsAny<CreatePersonDto>(), It.IsAny<CancellationToken>()), Times.Never);
-        _users.Verify(u => u.SetPersonIdAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _identity.Verify(u => u.LinkPersonToUserAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

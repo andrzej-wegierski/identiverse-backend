@@ -1,6 +1,7 @@
 using Database.DependencyInjection;
 using Domain.Abstractions;
 using Domain.DependencyInjection;
+using identiverse_backend.DepdendencyInjection;
 using identiverse_backend.Extensions;
 using identiverse_backend.Middleware;
 using identiverse_backend.Services;
@@ -12,14 +13,11 @@ builder.Services.AddFrontendCors();
 
 builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddDomain();
+builder.Services.AddPublicApi();
 
 builder.Services.AddAuthenticationAndAuthorization(builder.Configuration);
 
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
-builder.Services.AddScoped<ICurrentUserContext, CurrentUserService>();
-
-builder.Services.AddSingleton<ILoginThrottle, InMemoryLoginThrottle>();
 
 builder.Services.AddSwagger();
 

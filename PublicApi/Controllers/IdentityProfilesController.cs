@@ -28,7 +28,7 @@ public class IdentityProfilesController : ControllerBase
     [HttpGet("{identityId:int}", Name = "GetIdentityProfileById")]
     public async Task<ActionResult<IdentityProfileDto>> GetProfileById([FromRoute] int personId, [FromRoute] int identityId, CancellationToken ct = default)
     {
-        var dto = await _service.GetProfileByIdAsync(identityId, ct);
+        var dto = await _service.GetProfileByIdForPersonAsync(personId, identityId, ct);
         return dto is null ? NotFound() : Ok(dto);
     }
 
@@ -44,10 +44,8 @@ public class IdentityProfilesController : ControllerBase
     public async Task<ActionResult<IdentityProfileDto>> UpdateProfile([FromRoute] int personId, [FromRoute] int identityId,
         [FromBody] UpdateIdentityProfileDto request, CancellationToken ct = default)
     {
-        var existing = await _service.GetProfileByIdAsync(identityId, ct);
+        var existing = await _service.GetProfileByIdForPersonAsync(personId, identityId, ct);
         if (existing is null)
-            return NotFound();
-        if (existing.PersonId != personId)
             return NotFound();
 
         var updated = await _service.UpdateProfileAsync(identityId, request, ct);
@@ -57,10 +55,8 @@ public class IdentityProfilesController : ControllerBase
     [HttpDelete("{identityId:int}")]
     public async Task<ActionResult> DeleteProfile([FromRoute] int personId, [FromRoute] int identityId, CancellationToken ct = default)
     {
-        var existing = await _service.GetProfileByIdAsync(identityId, ct);
+        var existing = await _service.GetProfileByIdForPersonAsync(personId, identityId, ct);
         if (existing is null)
-            return NotFound();
-        if (existing.PersonId != personId)
             return NotFound();
 
         var deleted = await _service.DeleteProfileAsync(identityId, ct);

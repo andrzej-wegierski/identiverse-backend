@@ -116,13 +116,4 @@ public class PersonRepositoryTests
         Assert.That(missing, Is.False);
     }
 
-    [Test]
-    public async Task GetUserIdByPersonIdAsync_Returns_Null_When_NotFound()
-    {
-        await using var db = CreateDb(nameof(GetUserIdByPersonIdAsync_Returns_Null_When_NotFound));
-        var repo = CreateRepo(db);
-
-        var userId = await repo.GetUserIdByPersonIdAsync(999);
-        Assert.That(userId, Is.Null);
-    }
 }

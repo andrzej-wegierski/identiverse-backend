@@ -1,5 +1,5 @@
+using Domain.Abstractions;
 using Domain.Models;
-using Domain.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,10 +10,12 @@ namespace identiverse_backend.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _auth;
+    private readonly IEmailSender _emailSender;
 
-    public AuthController(IAuthService auth)
+    public AuthController(IAuthService auth, IEmailSender emailSender)
     {
         _auth = auth;
+        _emailSender = emailSender;
     }
 
     [HttpPost("register")]
@@ -30,5 +32,37 @@ public class AuthController : ControllerBase
     {
         var result = await _auth.LoginAsync(dto, ct);
         return Ok(result);
+    }
+    
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto, CancellationToken ct)
+    {
+        await _auth.ForgotPasswordAsync(dto, ct);
+        return Ok(new { Message = "Please check your email for password reset link" });
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto, CancellationToken ct)
+    {
+        await _auth.ResetPasswordAsync(dto, ct);
+        return Ok(new { Message = "Password has been reset successfully!" });
+    }
+
+    [HttpPost("resent-confirm-email")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResendConfirmationEmail([FromBody] ResendConfirmationDto dto, CancellationToken ct)
+    {
+        await _auth.ResendConfirmationEmailAsync(dto, ct);
+        return Ok(new { Message = "Please check your email for confirmation link" });
+    }
+
+    [HttpPost("confirm-email")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailDto dto, CancellationToken ct)
+    {
+        await _auth.ConfirmEmailAsync(dto, ct);
+        return Ok(new { Message = "Email confirmed successfully. You can now log in" });
     }
 }

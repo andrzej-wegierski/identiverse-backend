@@ -27,8 +27,14 @@ public class SelfOrAdminHandler : AuthorizationHandler<SelfOrAdminRequirement>
         }
         
         var routeData = _httpContextAccessor.HttpContext?.GetRouteData();
-        
         var personIdValue = routeData?.Values["personId"] ?? routeData?.Values["id"];
+
+        if (personIdValue is null)
+        {
+            context.Fail();
+            return;
+        }
+        
         var personIdStr = personIdValue?.ToString();
 
         if (int.TryParse(personIdStr, out var personId))
@@ -40,8 +46,12 @@ public class SelfOrAdminHandler : AuthorizationHandler<SelfOrAdminRequirement>
             }
             catch (Exception ex) when (ex is ForbiddenException or UnauthorizedIdentiverseException or NotFoundException)
             {
-                // Access denied or person not found - do not succeed
+                context.Fail();
             }
+        }
+        else
+        {
+            context.Fail();
         }
     }
 }
