@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Domain.Exceptions;
 using Domain.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Routing;
 
 namespace identiverse_backend.Authorization;
 

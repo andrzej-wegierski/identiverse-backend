@@ -266,6 +266,7 @@ public class AuthServiceTests
         // Assert
         _emailSenderMock.Verify(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         _userManagerMock.Verify(u => u.GeneratePasswordResetTokenAsync(It.IsAny<ApplicationUser>()), Times.Never);
+        _emailThrottleMock.Verify(t => t.RegisterAttemptAsync(email, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
@@ -288,6 +289,7 @@ public class AuthServiceTests
 
         // Assert
         _emailSenderMock.Verify(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _emailThrottleMock.Verify(t => t.RegisterAttemptAsync(email, It.IsAny<CancellationToken>()), Times.Once);
     }
     
       [Test]
@@ -443,6 +445,7 @@ public class AuthServiceTests
         // Assert
         _emailSenderMock.Verify(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         _userManagerMock.Verify(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<ApplicationUser>()), Times.Never);
+        _emailThrottleMock.Verify(t => t.RegisterAttemptAsync(email, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
@@ -466,6 +469,7 @@ public class AuthServiceTests
         // Assert
         _emailSenderMock.Verify(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         _userManagerMock.Verify(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<ApplicationUser>()), Times.Never);
+        _emailThrottleMock.Verify(t => t.RegisterAttemptAsync(email, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]

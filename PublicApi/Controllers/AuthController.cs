@@ -10,12 +10,10 @@ namespace identiverse_backend.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _auth;
-    private readonly IEmailSender _emailSender;
 
-    public AuthController(IAuthService auth, IEmailSender emailSender)
+    public AuthController(IAuthService auth)
     {
         _auth = auth;
-        _emailSender = emailSender;
     }
 
     [HttpPost("register")]

@@ -120,12 +120,12 @@ public class AuthService : IAuthService
     {
         if (!await _emailThrottle.IsAllowedAsync(dto.Email, ct))
             return;
+        
+        await _emailThrottle.RegisterAttemptAsync(dto.Email, ct);
 
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user is null || !(await _userManager.IsEmailConfirmedAsync(user)))
             return;
-        
-        await _emailThrottle.RegisterAttemptAsync(dto.Email, ct);
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         var link = GenerateLink("reset-password", user.Email!, token);
@@ -154,11 +154,11 @@ public class AuthService : IAuthService
         if (!await _emailThrottle.IsAllowedAsync(dto.Email, ct))
             return;
 
+        await _emailThrottle.RegisterAttemptAsync(dto.Email, ct);
+
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user is null || await _userManager.IsEmailConfirmedAsync(user))
             return;
-        
-        await _emailThrottle.RegisterAttemptAsync(dto.Email, ct);
 
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var link = GenerateLink("confirm-email", user.Email!, token);
