@@ -157,8 +157,13 @@ public class AuthService : IAuthService
         await _emailThrottle.RegisterAttemptAsync(dto.Email, ct);
 
         var user = await _userManager.FindByEmailAsync(dto.Email);
-        if (user is null || await _userManager.IsEmailConfirmedAsync(user))
+        if (user is null)
             return;
+
+        if (await _userManager.IsEmailConfirmedAsync(user))
+        {
+            throw new ConflictException("Email is already confirmed");
+        }
 
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var link = GenerateLink(_links.ConfirmEmailPath, user.Email!, token);

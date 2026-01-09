@@ -452,7 +452,7 @@ public class AuthServiceTests
     }
 
     [Test]
-    public async Task ResendConfirmationEmailAsync_WhenUserAlreadyConfirmed_DoesNotSendEmail()
+    public async Task ResendConfirmationEmailAsync_WhenUserAlreadyConfirmed_ThrowsConflictException()
     {
         // Arrange
         var email = "confirmed@example.com";
@@ -466,10 +466,10 @@ public class AuthServiceTests
         var dto = new ResendConfirmationDto { Email = email };
         var sut = CreateSut();
 
-        // Act
-        await sut.ResendConfirmationEmailAsync(dto);
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<ConflictException>(() => sut.ResendConfirmationEmailAsync(dto));
+        Assert.That(ex!.Message, Is.EqualTo("Email is already confirmed"));
 
-        // Assert
         _emailSenderMock.Verify(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         _userManagerMock.Verify(u => u.GenerateEmailConfirmationTokenAsync(It.IsAny<ApplicationUser>()), Times.Never);
         _emailThrottleMock.Verify(t => t.RegisterAttemptAsync(email, It.IsAny<CancellationToken>()), Times.Once);

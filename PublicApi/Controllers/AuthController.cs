@@ -1,4 +1,5 @@
 using Domain.Abstractions;
+using Domain.Exceptions;
 using Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -54,8 +55,15 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ResendConfirmationEmail([FromBody] ResendConfirmationDto dto, CancellationToken ct)
     {
-        await _auth.ResendConfirmationEmailAsync(dto, ct);
-        return Ok(new { Message = "Please check your email for confirmation link" });
+        try
+        {
+            await _auth.ResendConfirmationEmailAsync(dto, ct);
+            return Ok(new { Message = "Please check your email for confirmation link" });
+        }
+        catch (ConflictException ex)
+        {
+            return Ok(new { Message = ex.Message });
+        }
     }
 
     [HttpPost("confirm-email")]
