@@ -12,7 +12,7 @@ public interface IIdentityProfileService
     Task<IdentityProfileDto?> UpdateProfileAsync(int id, UpdateIdentityProfileDto dto, CancellationToken ct = default);
     Task<bool> DeleteProfileAsync(int id, CancellationToken ct = default);
     
-    Task<IdentityProfileDto?> GetPreferredProfileAsync(int personId, IdentityContext context, string? language, CancellationToken ct = default);
+    Task<IdentityProfileDto?> GetPreferredProfileAsync(int personId, IdentityContext context, CancellationToken ct = default);
 }
 
 public class IdentityProfileService : IIdentityProfileService
@@ -65,7 +65,6 @@ public class IdentityProfileService : IIdentityProfileService
     public async Task<IdentityProfileDto?> GetPreferredProfileAsync(
         int personId, 
         IdentityContext context, 
-        string? language = null, 
         CancellationToken ct = default)
     {
         await _access.CanAccessPersonAsync(personId, ct);
@@ -77,21 +76,6 @@ public class IdentityProfileService : IIdentityProfileService
         
         if (!sameContext.Any()) 
             return null;
-
-        if (!string.IsNullOrWhiteSpace(language))
-        {
-            var langMatches = sameContext
-                .Where(p => string.Equals(p.Language, language, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            var defLang = langMatches.FirstOrDefault(p => p.IsDefaultForContext);
-            if (defLang is not null)
-                return defLang;
-
-            var anyLang = langMatches.FirstOrDefault();
-            if (anyLang is not null)
-                return anyLang;
-        }
 
         var def = sameContext.FirstOrDefault(p => p.IsDefaultForContext);
         if (def is not null)

@@ -10,7 +10,6 @@ public class IdentityProfile
     public int PersonId { get; init; }
     public string DisplayName { get; set; } = string.Empty;
     public IdentityContext Context { get; set; }
-    public string? Language { get; set; }
     public bool IsDefaultForContext { get; set; }
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; set; }
@@ -35,9 +34,6 @@ public class IdentityProfileEntityConfiguration : IEntityTypeConfiguration<Ident
             .IsRequired()
             .HasMaxLength(100);
         
-        builder.Property(p => p.Language)
-            .HasMaxLength(10);
-        
         builder.Property(p => p.IsDefaultForContext)
             .HasDefaultValue(false);
         
@@ -52,6 +48,6 @@ public class IdentityProfileEntityConfiguration : IEntityTypeConfiguration<Ident
             .HasForeignKey(p => p.PersonId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(p => new { p.PersonId, p.Context, p.Language, p.IsDefaultForContext });
+        builder.HasIndex(p => new { p.PersonId, p.Context, p.IsDefaultForContext });
     }
 }

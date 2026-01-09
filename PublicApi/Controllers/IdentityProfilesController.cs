@@ -64,9 +64,9 @@ public class IdentityProfilesController : ControllerBase
     }
     
     [HttpGet("preferred")]
-    public async Task<ActionResult<IdentityProfileDto?>> GetPreferredProfile([FromRoute] int personId, [FromQuery] IdentityContext context, [FromQuery] string? language, CancellationToken ct = default)
+    public async Task<ActionResult<IdentityProfileDto?>> GetPreferredProfile([FromRoute] int personId, [FromQuery] IdentityContext context, CancellationToken ct = default)
     {
-        var dto = await _service.GetPreferredProfileAsync(personId, context, language, ct);
+        var dto = await _service.GetPreferredProfileAsync(personId, context, ct);
         if (dto is null) 
             return NotFound();
         

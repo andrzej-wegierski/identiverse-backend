@@ -18,7 +18,6 @@ public class IdentityProfileFactory : IIdentityProfileFactory
         PersonId = entity.PersonId,
         DisplayName = entity.DisplayName,
         Context = entity.Context,
-        Language = entity.Language,
         IsDefaultForContext = entity.IsDefaultForContext,
         CreatedAt = entity.CreatedAt,
         UpdatedAt = entity.UpdatedAt
@@ -29,7 +28,6 @@ public class IdentityProfileFactory : IIdentityProfileFactory
         PersonId = personId,
         DisplayName = dto.DisplayName.Trim(),
         Context = dto.Context,
-        Language = string.IsNullOrWhiteSpace(dto.Language) ? null : dto.Language.Trim(),
         IsDefaultForContext = dto.IsDefaultForContext,
         CreatedAt = DateTime.UtcNow,
         UpdatedAt = DateTime.UtcNow
@@ -39,7 +37,6 @@ public class IdentityProfileFactory : IIdentityProfileFactory
     {
         entity.DisplayName = dto.DisplayName.Trim();
         entity.Context = dto.Context;
-        entity.Language = string.IsNullOrWhiteSpace(dto.Language) ? null : dto.Language.Trim();
         entity.IsDefaultForContext = dto.IsDefaultForContext;
         entity.UpdatedAt = DateTime.UtcNow;
     }
