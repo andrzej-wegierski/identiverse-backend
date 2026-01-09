@@ -1,6 +1,7 @@
 using Database.DependencyInjection;
 using Domain.Abstractions;
 using Domain.DependencyInjection;
+using Domain.Models;
 using identiverse_backend.DepdendencyInjection;
 using identiverse_backend.Extensions;
 using identiverse_backend.Middleware;
@@ -14,6 +15,8 @@ builder.Services.AddFrontendCors();
 builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddDomain();
 builder.Services.AddPublicApi();
+
+builder.Services.AddFrontendLinks(builder.Configuration, builder.Environment);
 
 builder.Services.AddAuthenticationAndAuthorization(builder.Configuration);
 

@@ -22,7 +22,7 @@ public class AuthService : IAuthService
     private readonly ILoginThrottle _throttle;
     private readonly IEmailThrottle _emailThrottle;
     private readonly IEmailSender _emailSender;
-    private readonly IConfiguration _configuration;
+    private readonly FrontendLinksOptions _links;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
@@ -31,7 +31,7 @@ public class AuthService : IAuthService
         ILoginThrottle throttle,
         IEmailThrottle emailThrottle,
         IEmailSender emailSender,
-        IConfiguration configuration)
+        IOptions<FrontendLinksOptions> linksOptions)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -39,7 +39,7 @@ public class AuthService : IAuthService
         _throttle = throttle;
         _emailThrottle = emailThrottle;
         _emailSender = emailSender;
-        _configuration = configuration;
+        _links = linksOptions.Value;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterUserDto user, CancellationToken ct = default)
@@ -68,7 +68,7 @@ public class AuthService : IAuthService
         await _userManager.AddToRoleAsync(appUser, "User");
         
         var confirmToken = await _userManager.GenerateEmailConfirmationTokenAsync(appUser);
-        var link = GenerateLink("confirm-email", appUser.Email!, confirmToken);
+        var link = GenerateLink(_links.ConfirmEmailPath, appUser.Email!, confirmToken);
         
         await _emailSender.SendEmailAsync(
             user.Email!,
@@ -128,7 +128,7 @@ public class AuthService : IAuthService
             return;
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        var link = GenerateLink("reset-password", user.Email!, token);
+        var link = GenerateLink(_links.ResetPasswordPath, user.Email!, token);
         
         await _emailSender.SendEmailAsync(
             user.Email!,
@@ -161,7 +161,7 @@ public class AuthService : IAuthService
             return;
 
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        var link = GenerateLink("confirm-email", user.Email!, token);
+        var link = GenerateLink(_links.ConfirmEmailPath, user.Email!, token);
         
         await _emailSender.SendEmailAsync(
             user.Email!,
@@ -260,11 +260,17 @@ public class AuthService : IAuthService
         };
     }
 
-    private string GenerateLink(string endpoint, string email, string token)
+    private string GenerateLink(string path, string email, string token)
     {
-        var baseUrl = _configuration["IdentiverseFrontendBaseUrl"] ?? "https://localhost:3000";
         var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-        return $"{baseUrl}/{endpoint}?email={Uri.EscapeDataString(email)}&token={encodedToken}";
+        
+        var uriBuilder = new UriBuilder(_links.BaseUrl)
+        {
+            Path = path,
+            Query = $"email={Uri.EscapeDataString(email)}&token={encodedToken}"
+        };
+
+        return uriBuilder.ToString();
     }
 
 }

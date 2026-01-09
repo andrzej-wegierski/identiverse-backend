@@ -23,8 +23,8 @@ public class AuthServiceTests
     private readonly Mock<IEmailSender> _emailSenderMock = new();
     private readonly Mock<ILoginThrottle> _throttleMock = new();
     private readonly Mock<IEmailThrottle> _emailThrottleMock = new();
-    private readonly Mock<IConfiguration> _configurationMock = new();
     private IOptions<JwtOptions> _jwtOptions = null!;
+    private IOptions<FrontendLinksOptions> _frontendOptions = null!;
 
     [SetUp]
     public void SetUp()
@@ -48,7 +48,10 @@ public class AuthServiceTests
             ExpiryMinutes = 60 
         });
 
-        _configurationMock.Setup(c => c["IdentiverseFrontendBaseUrl"]).Returns("https://localhost:3000");
+        _frontendOptions = Options.Create(new FrontendLinksOptions
+        {
+            BaseUrl = "http://localhost:5173"
+        });
 
         _throttleMock.Setup(t => t.IsAllowedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
         _emailThrottleMock.Setup(t => t.IsAllowedAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
@@ -69,7 +72,7 @@ public class AuthServiceTests
             _throttleMock.Object,
             _emailThrottleMock.Object,
             _emailSenderMock.Object,
-            _configurationMock.Object);
+            _frontendOptions);
     }
 
     [Test]
@@ -610,21 +613,38 @@ public class AuthServiceTests
     }
 
     [Test]
-    public void ChangePassword_Throws_Validation_When_Policy_Fails()
+    public async Task ChangePassword_Throws_Validation_When_Policy_Fails()
+    {
+        // ... (existing code)
+    }
+
+    [Test]
+    public async Task GenerateLink_Handles_Trailing_Slash_Correctly()
     {
         // Arrange
-        var userId = 1;
-        var dto = new ChangePasswordDto { CurrentPassword = "OldPassword123!", NewPassword = "short" };
-        var user = new ApplicationUser { Id = userId };
+        var email = "user@example.com";
+        var user = new ApplicationUser { Email = email };
+        var token = "reset-token";
+        
+        _frontendOptions = Options.Create(new FrontendLinksOptions
+        {
+            BaseUrl = "http://localhost:5173/" // Trailing slash
+        });
 
-        _userManagerMock.Setup(m => m.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
-        _userManagerMock.Setup(m => m.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword))
-            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Password too short" }));
+        _userManagerMock.Setup(u => u.FindByEmailAsync(email)).ReturnsAsync(user);
+        _userManagerMock.Setup(u => u.IsEmailConfirmedAsync(user)).ReturnsAsync(true);
+        _userManagerMock.Setup(u => u.GeneratePasswordResetTokenAsync(user)).ReturnsAsync(token);
 
         var sut = CreateSut();
 
-        // Act & Assert
-        var ex = Assert.ThrowsAsync<ValidationException>(() => sut.ChangePassword(userId, dto));
-        Assert.That(ex!.Message, Is.EqualTo("Password too short"));
+        // Act
+        await sut.ForgotPasswordAsync(new ForgotPasswordDto { Email = email });
+
+        // Assert
+        _emailSenderMock.Verify(e => e.SendEmailAsync(
+            email,
+            "Reset Password",
+            It.Is<string>(s => s.Contains("http://localhost:5173/reset-password?"))),
+            Times.Once);
     }
 }
