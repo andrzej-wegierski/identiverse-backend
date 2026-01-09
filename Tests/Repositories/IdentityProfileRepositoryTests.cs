@@ -136,12 +136,31 @@ public class IdentityProfileRepositoryTests
 
         var list = await repo.GetProfilesByPersonAsync(person.Id);
         
-        Assert.That(list.Select(x => (x.Context, x.DisplayName)).ToList(), Is.EqualTo(new List<(IdentityContext, string)>
+        Assert.That(list.Select(x => (x.Context, x.DisplayName, x.IsDefaultForContext)).ToList(), Is.EqualTo(new List<(IdentityContext, string, bool)>
         {
-            (IdentityContext.Legal, "A"),
-            (IdentityContext.Legal, "B"),
-            (IdentityContext.Social, "Z"),
+            (IdentityContext.Legal, "A", true),
+            (IdentityContext.Legal, "B", false),
+            (IdentityContext.Social, "Z", false),
         }));
+    }
+
+    [Test]
+    public async Task GetProfilesByPersonAsync_Orders_By_DisplayName_When_No_Default()
+    {
+        using var conn = new SqliteConnection("DataSource=:memory:");
+        conn.Open();
+        using var db = CreateDbContext(conn);
+        var person = SeedPerson(db);
+        var factory = new IdentityProfileFactory();
+        var repo = new IdentityProfileRepository(db, factory);
+
+        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "Z", Context = IdentityContext.Legal, IsDefaultForContext = false });
+        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "A", Context = IdentityContext.Legal, IsDefaultForContext = false });
+        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "M", Context = IdentityContext.Legal, IsDefaultForContext = false });
+
+        var list = await repo.GetProfilesByPersonAsync(person.Id);
+
+        Assert.That(list.Select(x => x.DisplayName).ToList(), Is.EqualTo(new List<string> { "A", "M", "Z" }));
     }
 
     [Test]

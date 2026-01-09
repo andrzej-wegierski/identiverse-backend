@@ -68,19 +68,10 @@ public class IdentityProfileService : IIdentityProfileService
         CancellationToken ct = default)
     {
         await _access.CanAccessPersonAsync(personId, ct);
-        var profiles = await _repo.GetProfilesByPersonAsync(personId, ct);
-
-        var sameContext = profiles
-                .Where(p => p.Context == context)
-                .ToList();
         
-        if (!sameContext.Any()) 
-            return null;
-
-        var def = sameContext.FirstOrDefault(p => p.IsDefaultForContext);
-        if (def is not null)
-            return def;
-
-        return sameContext.FirstOrDefault();
+        var profiles = await _repo.GetProfilesByPersonAsync(personId, ct);
+        var preferred = profiles.FirstOrDefault(p => p.Context == context);
+        
+        return preferred;
     }
 }

@@ -65,4 +65,23 @@ public class IdentityProfileServiceTests
         var preferred = await service.GetPreferredProfileAsync(10, IdentityContext.Legal);
         Assert.That(preferred, Is.Null);
     }
+
+    [Test]
+    public async Task Preferred_Returns_Correct_Profile_When_Multiple_Contexts_Exist()
+    {
+        var profiles = new List<IdentityProfileDto>
+        {
+            new() { Id = 1, PersonId = 10, Context = IdentityContext.Legal, DisplayName = "Legal 1", IsDefaultForContext = false },
+            new() { Id = 2, PersonId = 10, Context = IdentityContext.Social, DisplayName = "Social 1", IsDefaultForContext = true },
+        };
+        var repo = new Mock<IIdentityProfileRepository>();
+        repo.Setup(r => r.GetProfilesByPersonAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
+        var service = CreateSut(repo.Object);
+
+        var preferredLegal = await service.GetPreferredProfileAsync(10, IdentityContext.Legal);
+        var preferredSocial = await service.GetPreferredProfileAsync(10, IdentityContext.Social);
+
+        Assert.That(preferredLegal!.Id, Is.EqualTo(1));
+        Assert.That(preferredSocial!.Id, Is.EqualTo(2));
+    }
 }
