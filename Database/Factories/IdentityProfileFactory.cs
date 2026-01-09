@@ -18,6 +18,10 @@ public class IdentityProfileFactory : IIdentityProfileFactory
         PersonId = entity.PersonId,
         DisplayName = entity.DisplayName,
         Context = entity.Context,
+        Title = entity.Title,
+        Email = entity.Email,
+        Phone = entity.Phone,
+        Address = entity.Address,
         IsDefaultForContext = entity.IsDefaultForContext,
         CreatedAt = entity.CreatedAt,
         UpdatedAt = entity.UpdatedAt
@@ -28,6 +32,10 @@ public class IdentityProfileFactory : IIdentityProfileFactory
         PersonId = personId,
         DisplayName = dto.DisplayName.Trim(),
         Context = dto.Context,
+        Title = dto.Title?.Trim(),
+        Email = dto.Email?.Trim(),
+        Phone = dto.Phone?.Trim(),
+        Address = dto.Address?.Trim(),
         IsDefaultForContext = dto.IsDefaultForContext,
         CreatedAt = DateTime.UtcNow,
         UpdatedAt = DateTime.UtcNow
@@ -37,6 +45,10 @@ public class IdentityProfileFactory : IIdentityProfileFactory
     {
         entity.DisplayName = dto.DisplayName.Trim();
         entity.Context = dto.Context;
+        entity.Title = dto.Title?.Trim();
+        entity.Email = dto.Email?.Trim();
+        entity.Phone = dto.Phone?.Trim();
+        entity.Address = dto.Address?.Trim();
         entity.IsDefaultForContext = dto.IsDefaultForContext;
         entity.UpdatedAt = DateTime.UtcNow;
     }
