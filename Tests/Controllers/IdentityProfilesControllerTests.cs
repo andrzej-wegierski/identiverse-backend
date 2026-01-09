@@ -57,7 +57,7 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task CreateProfile_Returns_CreatedAt_With_Payload()
     {
-        var create = new CreateIdentityProfileDto { DisplayName = "Alice (Work)", Context = IdentityContext.Legal, Language = "en-GB", IsDefaultForContext = true };
+        var create = new CreateIdentityProfileDto { DisplayName = "Alice (Work)", Context = IdentityContext.Legal, IsDefaultForContext = true };
         var created = new IdentityProfileDto { Id = 42, PersonId = 10 };
         _service.Setup(s => s.CreateProfileAsync(10, create, It.IsAny<CancellationToken>()))
             .ReturnsAsync(created);
@@ -76,7 +76,7 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task UpdateProfile_Returns_Ok_When_Updated()
     {
-        var update = new UpdateIdentityProfileDto { DisplayName = "Alice (Work)", Context = IdentityContext.Legal, Language = "en-GB", IsDefaultForContext = false };
+        var update = new UpdateIdentityProfileDto { DisplayName = "Alice (Work)", Context = IdentityContext.Legal, IsDefaultForContext = false };
         var existing = new IdentityProfileDto { Id = 7, PersonId = 10 };
         var updated = new IdentityProfileDto { Id = 7, PersonId = 10, DisplayName = "Updated" };
 
@@ -138,12 +138,12 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task GetPreferredProfile_Returns_Ok_When_Found()
     {
-        var dto = new IdentityProfileDto { Id = 100, PersonId = 10, Context = IdentityContext.Legal, Language = "en-GB" };
-        _service.Setup(s => s.GetPreferredProfileAsync(10, IdentityContext.Legal, "en-GB", It.IsAny<CancellationToken>()))
+        var dto = new IdentityProfileDto { Id = 100, PersonId = 10, Context = IdentityContext.Legal };
+        _service.Setup(s => s.GetPreferredProfileAsync(10, IdentityContext.Legal, It.IsAny<CancellationToken>()))
             .ReturnsAsync(dto);
 
         var controller = CreateSut();
-        var action = await controller.GetPreferredProfile(10, IdentityContext.Legal, "en-GB", default);
+        var action = await controller.GetPreferredProfile(10, IdentityContext.Legal, default);
 
         Assert.That(action.Result, Is.InstanceOf<OkObjectResult>());
         var ok = (OkObjectResult)action.Result!;
@@ -153,11 +153,11 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task GetPreferredProfile_Returns_NotFound_When_None()
     {
-        _service.Setup(s => s.GetPreferredProfileAsync(10, IdentityContext.Legal, null, It.IsAny<CancellationToken>()))
+        _service.Setup(s => s.GetPreferredProfileAsync(10, IdentityContext.Legal, It.IsAny<CancellationToken>()))
             .ReturnsAsync((IdentityProfileDto?)null);
 
         var controller = CreateSut();
-        var action = await controller.GetPreferredProfile(10, IdentityContext.Legal, null, default);
+        var action = await controller.GetPreferredProfile(10, IdentityContext.Legal, default);
         Assert.That(action.Result, Is.InstanceOf<NotFoundResult>());
     }
 

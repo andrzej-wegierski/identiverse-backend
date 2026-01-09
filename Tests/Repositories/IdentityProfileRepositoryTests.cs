@@ -48,7 +48,7 @@ public class IdentityProfileRepositoryTests
 
         var created = await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto
         {
-            DisplayName = "Alice (Work)", Context = IdentityContext.Legal, Language = "en-GB", IsDefaultForContext = true
+            DisplayName = "Alice (Work)", Context = IdentityContext.Legal, IsDefaultForContext = true
         });
 
         Assert.That(created.Id, Is.GreaterThan(0));
@@ -83,7 +83,7 @@ public class IdentityProfileRepositoryTests
 
         var created = await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto
         {
-            DisplayName = "Alice (Work)", Context = IdentityContext.Legal, Language = "en-GB", IsDefaultForContext = false
+            DisplayName = "Alice (Work)", Context = IdentityContext.Legal, IsDefaultForContext = false
         });
 
         var before = await db.IdentityProfiles.AsNoTracking().FirstAsync(x => x.Id == created.Id);
@@ -91,14 +91,12 @@ public class IdentityProfileRepositoryTests
         {
             DisplayName = "Alice W",
             Context = IdentityContext.Legal,
-            Language = "nb-NO",
             IsDefaultForContext = true
         });
 
         Assert.That(updated, Is.Not.Null);
         var after = await db.IdentityProfiles.AsNoTracking().FirstAsync(x => x.Id == created.Id);
         Assert.That(after.DisplayName, Is.EqualTo("Alice W"));
-        Assert.That(after.Language, Is.EqualTo("nb-NO"));
         Assert.That(after.IsDefaultForContext, Is.True);
         Assert.That(after.UpdatedAt, Is.GreaterThanOrEqualTo(before.UpdatedAt));
     }
