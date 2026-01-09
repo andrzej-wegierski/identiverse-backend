@@ -161,5 +161,29 @@ public class IdentityProfilesControllerTests
         Assert.That(action.Result, Is.InstanceOf<NotFoundResult>());
     }
 
+    [Test]
+    public async Task SetDefaultProfile_Returns_NoContent_On_Success()
+    {
+        _service.Setup(s => s.SetDefaultProfileAsync(10, 1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var controller = CreateSut();
+        var action = await controller.SetDefaultProfile(10, 1, default);
+
+        Assert.That(action, Is.InstanceOf<NoContentResult>());
+    }
+
+    [Test]
+    public async Task SetDefaultProfile_Returns_NotFound_On_Failure()
+    {
+        _service.Setup(s => s.SetDefaultProfileAsync(10, 1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var controller = CreateSut();
+        var action = await controller.SetDefaultProfile(10, 1, default);
+
+        Assert.That(action, Is.InstanceOf<NotFoundResult>());
+    }
+
     // Controllers are thin; access is enforced in domain services, so we only verify pass-through behavior.
 }

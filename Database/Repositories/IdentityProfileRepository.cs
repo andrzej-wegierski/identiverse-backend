@@ -74,11 +74,11 @@ public class IdentityProfileRepository : IIdentityProfileRepository
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task SetAsDefaultAsync(int profileId, CancellationToken ct = default)
+    public async Task<bool> SetAsDefaultAsync(int profileId, CancellationToken ct = default)
     {
         var target = await _db.IdentityProfiles.FirstOrDefaultAsync(p => p.Id == profileId, ct);
         if (target is null)
-            return;
+            return false;
 
         await using var transaction = await _db.Database.BeginTransactionAsync(ct);
         try
@@ -98,6 +98,7 @@ public class IdentityProfileRepository : IIdentityProfileRepository
 
             await _db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
+            return true;
         }
         catch
         {

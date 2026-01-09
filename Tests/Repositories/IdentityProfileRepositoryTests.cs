@@ -175,4 +175,54 @@ public class IdentityProfileRepositoryTests
         var personId = await repo.GetPersonIdByProfileIdAsync(999);
         Assert.That(personId, Is.Null);
     }
+
+    [Test]
+    public async Task SetAsDefaultAsync_Sets_Target_And_Unsets_Others_In_Context()
+    {
+        using var conn = new SqliteConnection("DataSource=:memory:");
+        conn.Open();
+        using var db = CreateDbContext(conn);
+        var person = SeedPerson(db);
+        var factory = new IdentityProfileFactory();
+        var repo = new IdentityProfileRepository(db, factory);
+
+        // Create two profiles for same context
+        var p1 = await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto 
+        { 
+            DisplayName = "P1", 
+            Context = IdentityContext.Social, 
+            IsDefaultForContext = true 
+        });
+        var p2 = await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto 
+        { 
+            DisplayName = "P2", 
+            Context = IdentityContext.Social, 
+            IsDefaultForContext = false 
+        });
+
+        // Act: Set P2 as default
+        var result = await repo.SetAsDefaultAsync(p2.Id);
+
+        // Assert
+        Assert.That(result, Is.True);
+        
+        var e1 = await db.IdentityProfiles.AsNoTracking().FirstAsync(x => x.Id == p1.Id);
+        var e2 = await db.IdentityProfiles.AsNoTracking().FirstAsync(x => x.Id == p2.Id);
+
+        Assert.That(e1.IsDefaultForContext, Is.False, "P1 should be unset as default");
+        Assert.That(e2.IsDefaultForContext, Is.True, "P2 should be set as default");
+    }
+
+    [Test]
+    public async Task SetAsDefaultAsync_Returns_False_If_Profile_Not_Found()
+    {
+        using var conn = new SqliteConnection("DataSource=:memory:");
+        conn.Open();
+        using var db = CreateDbContext(conn);
+        var factory = new IdentityProfileFactory();
+        var repo = new IdentityProfileRepository(db, factory);
+
+        var result = await repo.SetAsDefaultAsync(999);
+        Assert.That(result, Is.False);
+    }
 }

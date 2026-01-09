@@ -11,7 +11,7 @@ public interface IIdentityProfileService
     Task<IdentityProfileDto> CreateProfileAsync(int personId, CreateIdentityProfileDto dto, CancellationToken ct = default);
     Task<IdentityProfileDto?> UpdateProfileAsync(int id, UpdateIdentityProfileDto dto, CancellationToken ct = default);
     Task<bool> DeleteProfileAsync(int id, CancellationToken ct = default);
-    Task SetDefaultProfileAsync(int personId, int profileId, CancellationToken ct = default);
+    Task<bool> SetDefaultProfileAsync(int personId, int profileId, CancellationToken ct = default);
     
     Task<IdentityProfileDto?> GetPreferredProfileAsync(int personId, IdentityContext context, CancellationToken ct = default);
 }
@@ -63,15 +63,15 @@ public class IdentityProfileService : IIdentityProfileService
         return await _repo.DeleteProfileAsync(id, ct);
     }
 
-    public async Task SetDefaultProfileAsync(int personId, int profileId, CancellationToken ct = default)
+    public async Task<bool> SetDefaultProfileAsync(int personId, int profileId, CancellationToken ct = default)
     {
         await _access.CanAccessPersonAsync(personId, ct);
         
         var profile = await _repo.GetProfileByIdAsync(profileId, ct);
         if (profile is null || profile.PersonId != personId)
-            throw new KeyNotFoundException("Profile not found or does not belong to this person");
+            return false;
         
-        await _repo.SetAsDefaultAsync(profileId, ct);
+        return await _repo.SetAsDefaultAsync(profileId, ct);
     }
 
     public async Task<IdentityProfileDto?> GetPreferredProfileAsync(

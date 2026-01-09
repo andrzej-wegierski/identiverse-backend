@@ -72,4 +72,12 @@ public class IdentityProfilesController : ControllerBase
         
         return Ok(dto);
     }
+
+    [HttpPut("{identityId:int}/default")]
+    public async Task<ActionResult> SetDefaultProfile([FromRoute] int personId, [FromRoute] int identityId,
+        CancellationToken ct = default)
+    {
+        var result = await _service.SetDefaultProfileAsync(personId, identityId, ct);
+        return result ? NoContent() : NotFound();
+    }
 }
