@@ -5,12 +5,11 @@
 namespace Database.Migrations
 {
     /// <inheritdoc />
-    public partial class ExpandIdentityProfileFixed : Migration
+    public partial class ExpandIdentityProfile : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            /*
             migrationBuilder.AddColumn<string>(
                 name: "Address",
                 table: "IdentityProfiles",
@@ -38,7 +37,6 @@ namespace Database.Migrations
                 type: "character varying(50)",
                 maxLength: 50,
                 nullable: true);
-            */
         }
 
         /// <inheritdoc />

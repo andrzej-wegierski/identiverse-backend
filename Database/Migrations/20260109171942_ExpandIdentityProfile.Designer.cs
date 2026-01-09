@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Database.Migrations
 {
     [DbContext(typeof(IdentiverseDbContext))]
-    [Migration("20260109083844_ExpandIdentityProfileFixed")]
-    partial class ExpandIdentityProfileFixed
+    [Migration("20260109171942_ExpandIdentityProfile")]
+    partial class ExpandIdentityProfile
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
