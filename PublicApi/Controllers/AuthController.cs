@@ -10,10 +10,12 @@ namespace identiverse_backend.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _auth;
+    private readonly ICurrentUserContext _currentUser;
 
-    public AuthController(IAuthService auth)
+    public AuthController(IAuthService auth, ICurrentUserContext currentUser)
     {
         _auth = auth;
+        _currentUser = currentUser;
     }
 
     [HttpPost("register")]
@@ -62,5 +64,12 @@ public class AuthController : ControllerBase
     {
         await _auth.ConfirmEmailAsync(dto, ct);
         return Ok(new { Message = "Email confirmed successfully. You can now log in" });
+    }
+
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto, CancellationToken ct)
+    {
+        await _auth.ChangePassword(_currentUser.UserId, dto, ct);
+        return Ok(new { Message = "Password changed successfully!" });
     }
 }

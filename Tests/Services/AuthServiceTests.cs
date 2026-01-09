@@ -553,4 +553,78 @@ public class AuthServiceTests
         var ex = Assert.ThrowsAsync<ValidationException>(async () => await sut.ConfirmEmailAsync(dto));
         Assert.That(ex!.Message, Is.EqualTo("Invalid request"));
     }
+
+    [Test]
+    public async Task ChangePassword_Succeeds_When_CurrentPassword_Correct()
+    {
+        // Arrange
+        var userId = 1;
+        var dto = new ChangePasswordDto { CurrentPassword = "OldPassword123!", NewPassword = "NewPassword123!" };
+        var user = new ApplicationUser { Id = userId };
+
+        _userManagerMock.Setup(m => m.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
+        _userManagerMock.Setup(m => m.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword))
+            .ReturnsAsync(IdentityResult.Success);
+
+        var sut = CreateSut();
+
+        // Act
+        await sut.ChangePassword(userId, dto);
+
+        // Assert
+        _userManagerMock.Verify(m => m.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword), Times.Once);
+        _userManagerMock.Verify(m => m.UpdateSecurityStampAsync(user), Times.Once);
+    }
+
+    [Test]
+    public void ChangePassword_Throws_Unauthorized_When_User_NotFound()
+    {
+        // Arrange
+        var userId = 999;
+        var dto = new ChangePasswordDto { CurrentPassword = "any", NewPassword = "any" };
+        _userManagerMock.Setup(m => m.FindByIdAsync(userId.ToString())).ReturnsAsync((ApplicationUser?)null);
+
+        var sut = CreateSut();
+
+        // Act & Assert
+        Assert.ThrowsAsync<UnauthorizedIdentiverseException>(() => sut.ChangePassword(userId, dto));
+    }
+
+    [Test]
+    public void ChangePassword_Throws_Unauthorized_When_CurrentPassword_Wrong()
+    {
+        // Arrange
+        var userId = 1;
+        var dto = new ChangePasswordDto { CurrentPassword = "WrongPassword", NewPassword = "NewPassword123!" };
+        var user = new ApplicationUser { Id = userId };
+
+        _userManagerMock.Setup(m => m.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
+        _userManagerMock.Setup(m => m.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Code = "PasswordMismatch" }));
+
+        var sut = CreateSut();
+
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<UnauthorizedIdentiverseException>(() => sut.ChangePassword(userId, dto));
+        Assert.That(ex!.Message, Is.EqualTo("Invalid current password"));
+    }
+
+    [Test]
+    public void ChangePassword_Throws_Validation_When_Policy_Fails()
+    {
+        // Arrange
+        var userId = 1;
+        var dto = new ChangePasswordDto { CurrentPassword = "OldPassword123!", NewPassword = "short" };
+        var user = new ApplicationUser { Id = userId };
+
+        _userManagerMock.Setup(m => m.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
+        _userManagerMock.Setup(m => m.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Password too short" }));
+
+        var sut = CreateSut();
+
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<ValidationException>(() => sut.ChangePassword(userId, dto));
+        Assert.That(ex!.Message, Is.EqualTo("Password too short"));
+    }
 }

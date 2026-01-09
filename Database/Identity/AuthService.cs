@@ -182,6 +182,26 @@ public class AuthService : IAuthService
             throw new ValidationException("Failed to confirm email.");
     }
 
+    public async Task ChangePassword(int userId, ChangePasswordDto dto, CancellationToken ct = default)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+            throw new UnauthorizedIdentiverseException("User not found");
+        
+        var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+
+        if (!result.Succeeded)
+        {
+            var firstError = result.Errors.FirstOrDefault();
+            if (firstError?.Code == "PasswordMismatch")
+                throw new UnauthorizedIdentiverseException("Invalid current password");
+            
+            throw new ValidationException(firstError?.Description ?? "Failed to change password");
+        }
+        
+        await _userManager.UpdateSecurityStampAsync(user);
+    }
+
     private string DecodeToken(string token)
     {
         try
