@@ -73,4 +73,36 @@ public class IdentityProfileRepository : IIdentityProfileRepository
             .Select(p => (int?)p.PersonId)
             .FirstOrDefaultAsync(ct);
     }
+
+    public async Task SetAsDefaultAsync(int profileId, CancellationToken ct = default)
+    {
+        var target = await _db.IdentityProfiles.FirstOrDefaultAsync(p => p.Id == profileId, ct);
+        if (target is null)
+            return;
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            var existingDefault = await _db.IdentityProfiles
+                .Where(p => p.PersonId == target.PersonId && p.Context == target.Context && p.IsDefaultForContext)
+                .FirstOrDefaultAsync(ct);
+
+            if (existingDefault is not null)
+            {
+                existingDefault.IsDefaultForContext = false;
+                existingDefault.UpdatedAt = DateTime.UtcNow;
+            }
+
+            target.IsDefaultForContext = true;
+            target.UpdatedAt = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
+    }
 }
