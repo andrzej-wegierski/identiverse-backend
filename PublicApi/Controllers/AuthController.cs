@@ -70,8 +70,13 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailDto dto, CancellationToken ct)
     {
-        await _auth.ConfirmEmailAsync(dto, ct);
-        return Ok(new { Message = "Email confirmed successfully. You can now log in" });
+        var confirmed = await _auth.ConfirmEmailAsync(dto, ct);
+        return Ok(new
+        {
+            Message = confirmed
+                ? "Email confirmed successfully. You can now log in"
+                : "Email is already confirmed. You can log in"
+        });
     }
 
     [HttpPost("change-password")]

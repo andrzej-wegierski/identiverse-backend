@@ -173,7 +173,7 @@ public class AuthServiceTests
     }
 
     [Test]
-    public void LoginAsync_Throws_Forbidden_When_Email_Not_Confirmed()
+    public void LoginAsync_Throws_EmailNotConfirmed_When_Email_Not_Confirmed()
     {
         var login = new LoginUserDto { UsernameOrEmail = "user", Password = "password" };
         var appUser = new ApplicationUser { UserName = "user" };
@@ -184,7 +184,7 @@ public class AuthServiceTests
         _userManagerMock.Setup(m => m.IsEmailConfirmedAsync(appUser)).ReturnsAsync(false);
 
         var sut = CreateSut();
-        var ex = Assert.ThrowsAsync<ForbiddenException>(() => sut.LoginAsync(login));
+        var ex = Assert.ThrowsAsync<EmailNotConfirmedException>(() => sut.LoginAsync(login));
         Assert.That(ex!.Message, Is.EqualTo("Email is not confirmed"));
         
         _throttleMock.Verify(t => t.RegisterFailureAsync(login.UsernameOrEmail, It.IsAny<CancellationToken>()), Times.Once);
@@ -490,15 +490,47 @@ public class AuthServiceTests
 
         _userManagerMock.Setup(u => u.FindByEmailAsync(dto.Email))
             .ReturnsAsync(user);
+        _userManagerMock.Setup(u => u.IsEmailConfirmedAsync(user))
+            .ReturnsAsync(false);
         _userManagerMock.Setup(u => u.ConfirmEmailAsync(user, token))
             .ReturnsAsync(IdentityResult.Success);
 
         var sut = CreateSut();
 
-        // Act & Assert
-        await sut.ConfirmEmailAsync(dto); // Should not throw
+        // Act
+        var result = await sut.ConfirmEmailAsync(dto);
 
+        // Assert
+        Assert.That(result, Is.True);
         _userManagerMock.Verify(u => u.ConfirmEmailAsync(user, token), Times.Once);
+    }
+
+    [Test]
+    public async Task ConfirmEmailAsync_WhenAlreadyConfirmed_ReturnsFalse()
+    {
+        // Arrange
+        var token = "valid-token";
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        var dto = new ConfirmEmailDto
+        {
+            Email = "user@example.com",
+            Token = encodedToken
+        };
+        var user = new ApplicationUser { Email = dto.Email };
+
+        _userManagerMock.Setup(u => u.FindByEmailAsync(dto.Email))
+            .ReturnsAsync(user);
+        _userManagerMock.Setup(u => u.IsEmailConfirmedAsync(user))
+            .ReturnsAsync(true);
+
+        var sut = CreateSut();
+
+        // Act
+        var result = await sut.ConfirmEmailAsync(dto);
+
+        // Assert
+        Assert.That(result, Is.False);
+        _userManagerMock.Verify(u => u.ConfirmEmailAsync(user, It.IsAny<string>()), Times.Never);
     }
 
     [Test]

@@ -107,7 +107,7 @@ public class AuthService : IAuthService
         if (!await _userManager.IsEmailConfirmedAsync(appUser))
         {
             await _throttle.RegisterFailureAsync(user.UsernameOrEmail, ct);
-            throw new ForbiddenException("Email is not confirmed");
+            throw new EmailNotConfirmedException();
         }
         
         await _throttle.RegisterSuccessAsync(user.UsernameOrEmail, ct);
@@ -174,17 +174,22 @@ public class AuthService : IAuthService
             $"Please confirm your account by clicking here: {link}");
     }
 
-    public async Task ConfirmEmailAsync(ConfirmEmailDto dto, CancellationToken ct = default)
+    public async Task<bool> ConfirmEmailAsync(ConfirmEmailDto dto, CancellationToken ct = default)
     { 
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user is null)
             throw new ValidationException("Invalid request");
+
+        if (await _userManager.IsEmailConfirmedAsync(user))
+            return false;
 
         var decodedToken = DecodeToken(dto.Token);
         
         var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
         if (!result.Succeeded)
             throw new ValidationException("Failed to confirm email.");
+
+        return true;
     }
 
     public async Task ChangePassword(int userId, ChangePasswordDto dto, CancellationToken ct = default)
