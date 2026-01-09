@@ -10,6 +10,12 @@ public class IdentityProfile
     public int PersonId { get; init; }
     public string DisplayName { get; set; } = string.Empty;
     public IdentityContext Context { get; set; }
+    
+    public string? Title { get; set; }
+    public string? Email { get; set; }
+    public string? Phone { get; set; }
+    public string? Address { get; set; }
+    
     public bool IsDefaultForContext { get; set; }
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; set; }
@@ -28,6 +34,15 @@ public class IdentityProfileEntityConfiguration : IEntityTypeConfiguration<Ident
         builder.Property(p => p.DisplayName)
             .IsRequired()
             .HasMaxLength(200);
+        
+        builder.Property(p => p.Title)
+            .HasMaxLength(50);
+        builder.Property(p => p.Email)
+            .HasMaxLength(255);
+        builder.Property(p => p.Phone)
+            .HasMaxLength(50);
+        builder.Property(p => p.Address)
+            .HasMaxLength(500);
         
         builder.Property(p => p.Context)
             .HasConversion<string>()
