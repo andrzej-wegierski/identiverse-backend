@@ -56,8 +56,7 @@ public class IdentityProfileFactoryTests
             Title = "  Musician  ",
             Email = "  home@example.com  ",
             Phone = "  987-654-321  ",
-            Address = "  456 Home Ave  ",
-            IsDefaultForContext = false
+            Address = "  456 Home Ave  "
         };
         int personId = 20;
 
@@ -73,13 +72,13 @@ public class IdentityProfileFactoryTests
         Assert.That(entity.Email, Is.EqualTo("home@example.com"));
         Assert.That(entity.Phone, Is.EqualTo("987-654-321"));
         Assert.That(entity.Address, Is.EqualTo("456 Home Ave"));
-        Assert.That(entity.IsDefaultForContext, Is.EqualTo(dto.IsDefaultForContext));
+        Assert.That(entity.IsDefaultForContext, Is.False);
         Assert.That(entity.CreatedAt, Is.InRange(before, after));
         Assert.That(entity.UpdatedAt, Is.InRange(before, after));
     }
 
     [Test]
-    public void UpdateEntity_Updates_Mutable_Fields_And_Trims()
+    public void UpdateEntity_Updates_Mutable_Fields_And_Trims_But_Not_Default()
     {
         var entity = new IdentityProfile
         {
@@ -102,8 +101,7 @@ public class IdentityProfileFactoryTests
             Title = "  New Title  ",
             Email = "  new@example.com  ",
             Phone = "  111  ",
-            Address = "  New Address  ",
-            IsDefaultForContext = false
+            Address = "  New Address  "
         };
 
         var before = DateTime.UtcNow.AddSeconds(-1);
@@ -117,7 +115,7 @@ public class IdentityProfileFactoryTests
         Assert.That(entity.Email, Is.EqualTo("new@example.com"));
         Assert.That(entity.Phone, Is.EqualTo("111"));
         Assert.That(entity.Address, Is.EqualTo("New Address"));
-        Assert.That(entity.IsDefaultForContext, Is.EqualTo(updateDto.IsDefaultForContext));
+        Assert.That(entity.IsDefaultForContext, Is.True); // Remained true
         Assert.That(entity.UpdatedAt, Is.InRange(before, after));
     }
 

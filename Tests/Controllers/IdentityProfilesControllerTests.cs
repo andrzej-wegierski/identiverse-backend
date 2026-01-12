@@ -57,7 +57,7 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task CreateProfile_Returns_CreatedAt_With_Payload()
     {
-        var create = new CreateIdentityProfileDto { DisplayName = "Alice (Work)", Context = IdentityContext.Legal, IsDefaultForContext = true };
+        var create = new CreateIdentityProfileDto { DisplayName = "Alice (Work)", Context = IdentityContext.Legal };
         var created = new IdentityProfileDto { Id = 42, PersonId = 10 };
         _service.Setup(s => s.CreateProfileAsync(10, create, It.IsAny<CancellationToken>()))
             .ReturnsAsync(created);
@@ -76,7 +76,7 @@ public class IdentityProfilesControllerTests
     [Test]
     public async Task UpdateProfile_Returns_Ok_When_Updated()
     {
-        var update = new UpdateIdentityProfileDto { DisplayName = "Alice (Work)", Context = IdentityContext.Legal, IsDefaultForContext = false };
+        var update = new UpdateIdentityProfileDto { DisplayName = "Alice (Work)", Context = IdentityContext.Legal };
         var existing = new IdentityProfileDto { Id = 7, PersonId = 10 };
         var updated = new IdentityProfileDto { Id = 7, PersonId = 10, DisplayName = "Updated" };
 

@@ -45,8 +45,6 @@ public class CreateIdentityProfileDto
     public string? Phone { get; init; }
     [MaxLength(500)]
     public string? Address { get; init; }
-    
-    public bool IsDefaultForContext { get; init; } 
 }
 
 public class UpdateIdentityProfileDto
@@ -67,6 +65,4 @@ public class UpdateIdentityProfileDto
     public string? Phone { get; init; }
     [MaxLength(500)]
     public string? Address { get; init; }
-    
-    public bool IsDefaultForContext { get; init; } 
 }

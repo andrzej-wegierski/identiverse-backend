@@ -51,7 +51,6 @@ public class IdentityProfileRepositoryTests
         {
             DisplayName = "Alice (Work)", 
             Context = IdentityContext.Legal, 
-            IsDefaultForContext = true,
             BirthDate = birthDate
         });
 
@@ -59,7 +58,7 @@ public class IdentityProfileRepositoryTests
         var entity = await db.IdentityProfiles.FindAsync(created.Id);
         Assert.That(entity, Is.Not.Null);
         Assert.That(entity!.DisplayName, Is.EqualTo("Alice (Work)"));
-        Assert.That(entity.IsDefaultForContext, Is.True);
+        Assert.That(entity.IsDefaultForContext, Is.False);
         Assert.That(entity.BirthDate, Is.EqualTo(DateTime.SpecifyKind(birthDate, DateTimeKind.Utc)));
     }
 
@@ -88,8 +87,9 @@ public class IdentityProfileRepositoryTests
 
         var created = await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto
         {
-            DisplayName = "Alice (Work)", Context = IdentityContext.Legal, IsDefaultForContext = false
+            DisplayName = "Alice (Work)", Context = IdentityContext.Legal
         });
+        await repo.SetAsDefaultAsync(created.Id);
 
         var before = await db.IdentityProfiles.AsNoTracking().FirstAsync(x => x.Id == created.Id);
         var newBirthDate = new DateTime(1995, 5, 5, 0, 0, 0, DateTimeKind.Utc);
@@ -97,14 +97,13 @@ public class IdentityProfileRepositoryTests
         {
             DisplayName = "Alice W",
             Context = IdentityContext.Legal,
-            IsDefaultForContext = true,
             BirthDate = newBirthDate
         });
 
         Assert.That(updated, Is.Not.Null);
         var after = await db.IdentityProfiles.AsNoTracking().FirstAsync(x => x.Id == created.Id);
         Assert.That(after.DisplayName, Is.EqualTo("Alice W"));
-        Assert.That(after.IsDefaultForContext, Is.True);
+        Assert.That(after.IsDefaultForContext, Is.True); // Remained true from SetAsDefaultAsync
         Assert.That(after.BirthDate, Is.EqualTo(newBirthDate));
         Assert.That(after.UpdatedAt, Is.GreaterThanOrEqualTo(before.UpdatedAt));
     }
@@ -138,9 +137,11 @@ public class IdentityProfileRepositoryTests
         var repo = new IdentityProfileRepository(db, factory);
 
         // Different contexts and defaults to exercise ordering
-        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "B", Context = IdentityContext.Legal, IsDefaultForContext = false });
-        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "A", Context = IdentityContext.Legal, IsDefaultForContext = true });
-        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "Z", Context = IdentityContext.Social, IsDefaultForContext = false });
+        var p_b = await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "B", Context = IdentityContext.Legal });
+        var p_a = await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "A", Context = IdentityContext.Legal });
+        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "Z", Context = IdentityContext.Social });
+
+        await repo.SetAsDefaultAsync(p_a.Id);
 
         var list = await repo.GetProfilesByPersonAsync(person.Id);
         
@@ -162,9 +163,9 @@ public class IdentityProfileRepositoryTests
         var factory = new IdentityProfileFactory();
         var repo = new IdentityProfileRepository(db, factory);
 
-        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "Z", Context = IdentityContext.Legal, IsDefaultForContext = false });
-        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "A", Context = IdentityContext.Legal, IsDefaultForContext = false });
-        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "M", Context = IdentityContext.Legal, IsDefaultForContext = false });
+        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "Z", Context = IdentityContext.Legal });
+        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "A", Context = IdentityContext.Legal });
+        await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto { DisplayName = "M", Context = IdentityContext.Legal });
 
         var list = await repo.GetProfilesByPersonAsync(person.Id);
 
@@ -198,14 +199,14 @@ public class IdentityProfileRepositoryTests
         var p1 = await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto 
         { 
             DisplayName = "P1", 
-            Context = IdentityContext.Social, 
-            IsDefaultForContext = true 
+            Context = IdentityContext.Social
         });
+        await repo.SetAsDefaultAsync(p1.Id);
+
         var p2 = await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto 
         { 
             DisplayName = "P2", 
-            Context = IdentityContext.Social, 
-            IsDefaultForContext = false 
+            Context = IdentityContext.Social
         });
 
         // Act: Set P2 as default

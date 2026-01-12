@@ -38,7 +38,7 @@ public class IdentityProfileFactory : IIdentityProfileFactory
         Email = dto.Email?.Trim(),
         Phone = dto.Phone?.Trim(),
         Address = dto.Address?.Trim(),
-        IsDefaultForContext = dto.IsDefaultForContext,
+        IsDefaultForContext = false,
         CreatedAt = DateTime.UtcNow,
         UpdatedAt = DateTime.UtcNow
     };
@@ -52,7 +52,6 @@ public class IdentityProfileFactory : IIdentityProfileFactory
         entity.Email = dto.Email?.Trim();
         entity.Phone = dto.Phone?.Trim();
         entity.Address = dto.Address?.Trim();
-        entity.IsDefaultForContext = dto.IsDefaultForContext;
         entity.UpdatedAt = DateTime.UtcNow;
     }
 }
