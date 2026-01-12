@@ -82,8 +82,20 @@ public class IdentityProfileService : IIdentityProfileService
         await _access.CanAccessPersonAsync(personId, ct);
         
         var profiles = await _repo.GetProfilesByPersonAsync(personId, ct);
-        var preferred = profiles.FirstOrDefault(p => p.Context == context);
         
-        return preferred;
+        var matchingProfiles = profiles.Where(p => p.Context == context).ToList();
+        if (matchingProfiles.Count == 0)
+            return null;
+
+        var defaultProfiles = matchingProfiles.Where(p => p.IsDefaultForContext).ToList();
+        if (defaultProfiles.Count > 0)
+        {
+            return defaultProfiles.OrderBy(p => p.Id).First();
+        }
+
+        return matchingProfiles
+            .OrderBy(p => p.DisplayName)
+            .ThenBy(p => p.Id)
+            .First();
     }
 }

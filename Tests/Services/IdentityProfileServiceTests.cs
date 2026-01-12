@@ -35,12 +35,29 @@ public class IdentityProfileServiceTests
     }
 
     [Test]
-    public async Task Preferred_Falls_Back_To_First_When_No_Default()
+    public async Task Preferred_Returns_Default_With_Lowest_Id_When_Multiple_Defaults_Exist()
     {
         var profiles = new List<IdentityProfileDto>
         {
-            new() { Id = 1, PersonId = 10, Context = IdentityContext.Legal, DisplayName = "A", IsDefaultForContext = false },
+            new() { Id = 10, PersonId = 10, Context = IdentityContext.Legal, DisplayName = "Z", IsDefaultForContext = true },
+            new() { Id = 5, PersonId = 10, Context = IdentityContext.Legal, DisplayName = "A", IsDefaultForContext = true },
+        };
+        var repo = new Mock<IIdentityProfileRepository>();
+        repo.Setup(r => r.GetProfilesByPersonAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
+        var service = CreateSut(repo.Object);
+
+        var preferred = await service.GetPreferredProfileAsync(10, IdentityContext.Legal);
+        Assert.That(preferred!.Id, Is.EqualTo(5));
+    }
+
+    [Test]
+    public async Task Preferred_Falls_Back_To_Deterministic_Ordering_When_No_Default()
+    {
+        var profiles = new List<IdentityProfileDto>
+        {
             new() { Id = 2, PersonId = 10, Context = IdentityContext.Legal, DisplayName = "B", IsDefaultForContext = false },
+            new() { Id = 1, PersonId = 10, Context = IdentityContext.Legal, DisplayName = "A", IsDefaultForContext = false },
+            new() { Id = 3, PersonId = 10, Context = IdentityContext.Legal, DisplayName = "B", IsDefaultForContext = false },
         };
         var repo = new Mock<IIdentityProfileRepository>();
         repo.Setup(r => r.GetProfilesByPersonAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
@@ -48,7 +65,26 @@ public class IdentityProfileServiceTests
 
         var preferred = await service.GetPreferredProfileAsync(10, IdentityContext.Legal);
         Assert.That(preferred, Is.Not.Null);
+        // Should pick DisplayName "A" (Id 1)
         Assert.That(preferred!.Id, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task Preferred_Falls_Back_To_Id_Ordering_When_Names_Are_Same()
+    {
+        var profiles = new List<IdentityProfileDto>
+        {
+            new() { Id = 3, PersonId = 10, Context = IdentityContext.Legal, DisplayName = "A", IsDefaultForContext = false },
+            new() { Id = 2, PersonId = 10, Context = IdentityContext.Legal, DisplayName = "A", IsDefaultForContext = false },
+        };
+        var repo = new Mock<IIdentityProfileRepository>();
+        repo.Setup(r => r.GetProfilesByPersonAsync(10, It.IsAny<CancellationToken>())).ReturnsAsync(profiles);
+        var service = CreateSut(repo.Object);
+
+        var preferred = await service.GetPreferredProfileAsync(10, IdentityContext.Legal);
+        Assert.That(preferred, Is.Not.Null);
+        // Should pick DisplayName "A" and lower Id (2)
+        Assert.That(preferred!.Id, Is.EqualTo(2));
     }
 
     [Test]
