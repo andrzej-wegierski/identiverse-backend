@@ -5,7 +5,7 @@ using Domain.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace Domain.Services;
+namespace Database.Identity;
 
 public class IdentityService : IIdentityService
 {
