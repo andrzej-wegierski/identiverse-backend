@@ -95,7 +95,8 @@ public class AuthServiceTests
         var sut = CreateSut();
         var result = await sut.RegisterAsync(reg);
 
-        Assert.That(result.AccessToken, Is.Not.Null.And.Not.Empty);
+        Assert.That(result.AccessToken, Is.Empty);
+        Assert.That(result.Expires, Is.EqualTo(DateTimeOffset.MinValue));
         Assert.That(result.User, Is.Not.Null);
         Assert.That(result.User!.Username, Is.EqualTo("newuser"));
         

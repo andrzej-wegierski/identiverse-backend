@@ -76,7 +76,15 @@ public class AuthService : IAuthService
             $"Please confirm your account by clicking here: {link}");
         
         var userDto = await MapToDtoAsync(appUser);
-        return CreateAuthResponse(userDto);
+        
+        // Registration does not issue a JWT token immediately. 
+        // Users must confirm their email and then log in.
+        return new AuthResponseDto
+        {
+            AccessToken = string.Empty,
+            Expires = DateTimeOffset.MinValue, // Explicitly no expiration for empty token
+            User = userDto
+        };
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginUserDto user, CancellationToken ct = default)
