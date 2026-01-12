@@ -31,7 +31,7 @@ public class IdentityProfilesController : ControllerBase
         var dto = await _service.GetProfileByIdForPersonAsync(personId, identityId, ct);
         return dto is null ? NotFound() : Ok(dto);
     }
-
+ 
     [HttpPost]
     public async Task<ActionResult<IdentityProfileDto>> CreateProfile([FromRoute] int personId,
         [FromBody] CreateIdentityProfileDto request, CancellationToken ct = default)

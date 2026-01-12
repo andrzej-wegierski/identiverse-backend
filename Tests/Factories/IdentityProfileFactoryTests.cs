@@ -120,4 +120,19 @@ public class IdentityProfileFactoryTests
         Assert.That(entity.IsDefaultForContext, Is.EqualTo(updateDto.IsDefaultForContext));
         Assert.That(entity.UpdatedAt, Is.InRange(before, after));
     }
+
+    [Test]
+    public void FromCreate_Sets_BirthDate_With_Unspecified_Kind()
+    {
+        var dto = new CreateIdentityProfileDto
+        {
+            DisplayName = "Test",
+            BirthDate = new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Unspecified)
+        };
+
+        var entity = _factory.FromCreate(1, dto);
+
+        Assert.That(entity.BirthDate, Is.Not.Null);
+        Assert.That(entity.BirthDate, Is.EqualTo(dto.BirthDate));
+    }
 }

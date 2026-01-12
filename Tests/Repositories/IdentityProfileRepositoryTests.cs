@@ -46,7 +46,7 @@ public class IdentityProfileRepositoryTests
         var factory = new IdentityProfileFactory();
         var repo = new IdentityProfileRepository(db, factory);
 
-        var birthDate = new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var birthDate = new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
         var created = await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto
         {
             DisplayName = "Alice (Work)", 
@@ -60,7 +60,7 @@ public class IdentityProfileRepositoryTests
         Assert.That(entity, Is.Not.Null);
         Assert.That(entity!.DisplayName, Is.EqualTo("Alice (Work)"));
         Assert.That(entity.IsDefaultForContext, Is.True);
-        Assert.That(entity.BirthDate, Is.EqualTo(birthDate));
+        Assert.That(entity.BirthDate, Is.EqualTo(DateTime.SpecifyKind(birthDate, DateTimeKind.Utc)));
     }
 
     [Test]
