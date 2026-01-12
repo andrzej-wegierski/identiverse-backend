@@ -10,6 +10,7 @@ public class IdentityProfileDto
     public string DisplayName { get; init; } = string.Empty;
     public IdentityContext Context { get; init; }
     
+    public DateTime? BirthDate { get; init; }
     [MaxLength(50)]
     public string? Title { get; init; }
     [EmailAddress]
@@ -33,6 +34,7 @@ public class CreateIdentityProfileDto
     public string DisplayName { get; init; } = string.Empty;
     public IdentityContext Context { get; init; }
     
+    public DateTime? BirthDate { get; init; }
     [MaxLength(50)]
     public string? Title { get; init; }
     [EmailAddress]
@@ -54,6 +56,7 @@ public class UpdateIdentityProfileDto
     public string DisplayName { get; init; } = string.Empty;
     public IdentityContext Context { get; init; } 
     
+    public DateTime? BirthDate { get; init; }
     [MaxLength(50)]
     public string? Title { get; init; }
     [EmailAddress]

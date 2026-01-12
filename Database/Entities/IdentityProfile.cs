@@ -11,6 +11,7 @@ public class IdentityProfile
     public string DisplayName { get; set; } = string.Empty;
     public IdentityContext Context { get; set; }
     
+    public DateTime? BirthDate { get; set; }
     public string? Title { get; set; }
     public string? Email { get; set; }
     public string? Phone { get; set; }

@@ -46,9 +46,13 @@ public class IdentityProfileRepositoryTests
         var factory = new IdentityProfileFactory();
         var repo = new IdentityProfileRepository(db, factory);
 
+        var birthDate = new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var created = await repo.CreateProfileAsync(person.Id, new CreateIdentityProfileDto
         {
-            DisplayName = "Alice (Work)", Context = IdentityContext.Legal, IsDefaultForContext = true
+            DisplayName = "Alice (Work)", 
+            Context = IdentityContext.Legal, 
+            IsDefaultForContext = true,
+            BirthDate = birthDate
         });
 
         Assert.That(created.Id, Is.GreaterThan(0));
@@ -56,6 +60,7 @@ public class IdentityProfileRepositoryTests
         Assert.That(entity, Is.Not.Null);
         Assert.That(entity!.DisplayName, Is.EqualTo("Alice (Work)"));
         Assert.That(entity.IsDefaultForContext, Is.True);
+        Assert.That(entity.BirthDate, Is.EqualTo(birthDate));
     }
 
     [Test]
@@ -87,17 +92,20 @@ public class IdentityProfileRepositoryTests
         });
 
         var before = await db.IdentityProfiles.AsNoTracking().FirstAsync(x => x.Id == created.Id);
+        var newBirthDate = new DateTime(1995, 5, 5, 0, 0, 0, DateTimeKind.Utc);
         var updated = await repo.UpdateProfileAsync(created.Id, new UpdateIdentityProfileDto
         {
             DisplayName = "Alice W",
             Context = IdentityContext.Legal,
-            IsDefaultForContext = true
+            IsDefaultForContext = true,
+            BirthDate = newBirthDate
         });
 
         Assert.That(updated, Is.Not.Null);
         var after = await db.IdentityProfiles.AsNoTracking().FirstAsync(x => x.Id == created.Id);
         Assert.That(after.DisplayName, Is.EqualTo("Alice W"));
         Assert.That(after.IsDefaultForContext, Is.True);
+        Assert.That(after.BirthDate, Is.EqualTo(newBirthDate));
         Assert.That(after.UpdatedAt, Is.GreaterThanOrEqualTo(before.UpdatedAt));
     }
 
