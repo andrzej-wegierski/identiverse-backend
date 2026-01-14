@@ -158,4 +158,42 @@ public class IdentityProfileServiceTests
         var result = await service.SetDefaultProfileAsync(10, 1);
         Assert.That(result, Is.False);
     }
+
+    [Test]
+    public async Task UnsetDefaultProfile_Returns_True_On_Success()
+    {
+        var repo = new Mock<IIdentityProfileRepository>();
+        repo.Setup(r => r.GetProfileByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdentityProfileDto { Id = 1, PersonId = 10 });
+        repo.Setup(r => r.UnsetDefaultAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        var service = CreateSut(repo.Object);
+
+        var result = await service.UnsetDefaultProfileAsync(10, 1);
+        Assert.That(result, Is.True);
+    }
+
+    [Test]
+    public async Task UnsetDefaultProfile_Returns_False_If_Profile_NotFound()
+    {
+        var repo = new Mock<IIdentityProfileRepository>();
+        repo.Setup(r => r.GetProfileByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IdentityProfileDto?)null);
+        var service = CreateSut(repo.Object);
+
+        var result = await service.UnsetDefaultProfileAsync(10, 1);
+        Assert.That(result, Is.False);
+    }
+
+    [Test]
+    public async Task UnsetDefaultProfile_Returns_False_If_Profile_Does_Not_Belong_To_Person()
+    {
+        var repo = new Mock<IIdentityProfileRepository>();
+        repo.Setup(r => r.GetProfileByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new IdentityProfileDto { Id = 1, PersonId = 20 });
+        var service = CreateSut(repo.Object);
+
+        var result = await service.UnsetDefaultProfileAsync(10, 1);
+        Assert.That(result, Is.False);
+    }
 }

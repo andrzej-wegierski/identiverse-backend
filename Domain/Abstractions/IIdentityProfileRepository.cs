@@ -11,4 +11,5 @@ public interface IIdentityProfileRepository
     Task<bool> DeleteProfileAsync(int id, CancellationToken ct = default);
     Task<int?> GetPersonIdByProfileIdAsync(int profileId, CancellationToken ct = default);
     Task<bool> SetAsDefaultAsync(int profileId, CancellationToken ct = default);
+    Task<bool> UnsetDefaultAsync(int profileId, CancellationToken ct = default);
 }

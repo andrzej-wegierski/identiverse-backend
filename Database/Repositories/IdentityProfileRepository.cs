@@ -106,4 +106,17 @@ public class IdentityProfileRepository : IIdentityProfileRepository
             throw;
         }
     }
+
+    public async Task<bool> UnsetDefaultAsync(int profileId, CancellationToken ct = default)
+    {
+        var target = await _db.IdentityProfiles.FirstOrDefaultAsync(p => p.Id == profileId, ct);
+        if (target is null)
+            return false;
+
+        target.IsDefaultForContext = false;
+        target.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
 }

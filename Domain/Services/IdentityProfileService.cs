@@ -12,6 +12,7 @@ public interface IIdentityProfileService
     Task<IdentityProfileDto?> UpdateProfileAsync(int id, UpdateIdentityProfileDto dto, CancellationToken ct = default);
     Task<bool> DeleteProfileAsync(int id, CancellationToken ct = default);
     Task<bool> SetDefaultProfileAsync(int personId, int profileId, CancellationToken ct = default);
+    Task<bool> UnsetDefaultProfileAsync(int personId, int profileId, CancellationToken ct = default);
     
     Task<IdentityProfileDto?> GetPreferredProfileAsync(int personId, IdentityContext context, CancellationToken ct = default);
 }
@@ -72,6 +73,17 @@ public class IdentityProfileService : IIdentityProfileService
             return false;
         
         return await _repo.SetAsDefaultAsync(profileId, ct);
+    }
+
+    public async Task<bool> UnsetDefaultProfileAsync(int personId, int profileId, CancellationToken ct = default)
+    {
+        await _access.CanAccessPersonAsync(personId, ct);
+
+        var profile = await _repo.GetProfileByIdAsync(profileId, ct);
+        if (profile is null || profile.PersonId != personId)
+            return false;
+
+        return await _repo.UnsetDefaultAsync(profileId, ct);
     }
 
     public async Task<IdentityProfileDto?> GetPreferredProfileAsync(

@@ -80,4 +80,12 @@ public class IdentityProfilesController : ControllerBase
         var result = await _service.SetDefaultProfileAsync(personId, identityId, ct);
         return result ? NoContent() : NotFound();
     }
+
+    [HttpDelete("{identityId:int}/default")]
+    public async Task<ActionResult> UnsetDefaultProfile([FromRoute] int personId, [FromRoute] int identityId,
+        CancellationToken ct = default)
+    {
+        var result = await _service.UnsetDefaultProfileAsync(personId, identityId, ct);
+        return result ? NoContent() : NotFound();
+    }
 }
