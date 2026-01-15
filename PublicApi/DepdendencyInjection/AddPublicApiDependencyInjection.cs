@@ -12,7 +12,7 @@ public static class AddPublicApiDependencyInjection
         services.AddScoped<ICurrentUserContext, CurrentUserService>();
         services.AddSingleton<ILoginThrottle, InMemoryLoginThrottle>();
         services.AddSingleton<IEmailThrottle, InMemoryEmailThrottle>();
-        services.AddScoped<IEmailSender, LogEmailSender>();
+        services.AddScoped<IEmailSender, EmailSender>();
         
         return services;
     }
