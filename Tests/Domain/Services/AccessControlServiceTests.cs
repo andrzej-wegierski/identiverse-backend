@@ -1,6 +1,7 @@
 using Domain.Abstractions;
 using Domain.Exceptions;
 using Domain.Services;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Tests.Domain.Services;
@@ -10,12 +11,13 @@ public class AccessControlServiceTests
     private readonly Mock<ICurrentUserContext> _userMock = new();
     private readonly Mock<IIdentityProfileRepository> _profilesMock = new();
     private readonly Mock<IIdentityService> _identityMock = new();
+    private readonly Mock<ILogger<AccessControlService>> _loggerMock = new();
     private AccessControlService _sut = null!;
 
     [SetUp]
     public void SetUp()
     {
-        _sut = new AccessControlService(_userMock.Object, _profilesMock.Object, _identityMock.Object);
+        _sut = new AccessControlService(_userMock.Object, _profilesMock.Object, _identityMock.Object, _loggerMock.Object);
     }
 
     [Test]

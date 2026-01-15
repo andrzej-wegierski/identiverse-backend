@@ -23,6 +23,9 @@ public class ExceptionHandlingMiddleware
         }
         catch (IdentiverseException ex)
         {
+            _logger.LogWarning(ex, "Identiverse exception occurred. Status: {StatusCode}, TraceId: {TraceId}", 
+                ex.StatusCode, context.TraceIdentifier);
+            
             await WriteProblemAsync(
                 context,
                 statusCode: ex.StatusCode,
@@ -32,7 +35,9 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception");
+            _logger.LogError(ex, "Unhandled exception occurred. Status: 500, TraceId: {TraceId}", 
+                context.TraceIdentifier);
+            
             await WriteProblemAsync(context, statusCode: (int)HttpStatusCode.InternalServerError,
                 title: "Internal Server Error",
                 type: "https://errors.identiverse.dev/internal-server-error",

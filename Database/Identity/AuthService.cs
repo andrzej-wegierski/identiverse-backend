@@ -9,6 +9,7 @@ using Domain.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -23,6 +24,7 @@ public class AuthService : IAuthService
     private readonly IEmailThrottle _emailThrottle;
     private readonly IEmailSender _emailSender;
     private readonly FrontendLinksOptions _links;
+    private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
@@ -31,7 +33,8 @@ public class AuthService : IAuthService
         ILoginThrottle throttle,
         IEmailThrottle emailThrottle,
         IEmailSender emailSender,
-        IOptions<FrontendLinksOptions> linksOptions)
+        IOptions<FrontendLinksOptions> linksOptions,
+        ILogger<AuthService> logger)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -40,6 +43,7 @@ public class AuthService : IAuthService
         _emailThrottle = emailThrottle;
         _emailSender = emailSender;
         _links = linksOptions.Value;
+        _logger = logger;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterUserDto user, CancellationToken ct = default)
@@ -65,6 +69,8 @@ public class AuthService : IAuthService
             throw new ValidationException(firstError?.Description ?? "User registration failed.");
         }
         
+        _logger.LogInformation("User {UserId} registered with email {Email}", appUser.Id, appUser.Email);
+
         await _userManager.AddToRoleAsync(appUser, "User");
         
         var confirmToken = await _userManager.GenerateEmailConfirmationTokenAsync(appUser);
@@ -75,28 +81,25 @@ public class AuthService : IAuthService
             "Confirm your email",
             $"Please confirm your account by clicking here: {link}");
         
-        var userDto = await MapToDtoAsync(appUser);
-        
-        // Registration does not issue a JWT token immediately. 
-        // Users must confirm their email and then log in.
-        return new AuthResponseDto
-        {
-            AccessToken = string.Empty,
-            Expires = DateTimeOffset.MinValue, // Explicitly no expiration for empty token
-            User = userDto
-        };
+        _logger.LogInformation("Confirmation email sent to {Email}", user.Email);
+
+        return new AuthResponseDto();
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginUserDto user, CancellationToken ct = default)
     {
         if (!await _throttle.IsAllowedAsync(user.UsernameOrEmail, ct))
+        {
+            _logger.LogWarning("Login throttled for {UsernameOrEmail}", user.UsernameOrEmail);
             throw new TooManyRequestsException("Too many login attempts. Please try again later.");
+        }
         
         var appUser = await _userManager.FindByNameAsync(user.UsernameOrEmail)
             ?? await _userManager.FindByEmailAsync(user.UsernameOrEmail);
 
         if (appUser is null)
         {
+            _logger.LogWarning("Invalid credentials attempt for {UsernameOrEmail}", user.UsernameOrEmail);
             await _throttle.RegisterFailureAsync(user.UsernameOrEmail, ct);
             throw new UnauthorizedIdentiverseException("Invalid username or password");
         }
@@ -104,28 +107,37 @@ public class AuthService : IAuthService
         var result = await _signInManager.CheckPasswordSignInAsync(appUser, user.Password, true);
         
         if (result.IsLockedOut)
+        {
+            _logger.LogWarning("User {UserId} is locked out", appUser.Id);
             throw new ForbiddenException("User is locked due to multiple failed login attempts.");
+        }
 
         if (!result.Succeeded)
         {
+            _logger.LogWarning("Invalid credentials attempt for user {UserId}", appUser.Id);
             await _throttle.RegisterFailureAsync(user.UsernameOrEmail, ct);
             throw new UnauthorizedIdentiverseException("Invalid username or password");
         }
 
         if (!await _userManager.IsEmailConfirmedAsync(appUser))
         {
+            _logger.LogWarning("Login blocked for user {UserId} due to unconfirmed email", appUser.Id);
             await _throttle.RegisterFailureAsync(user.UsernameOrEmail, ct);
             throw new EmailNotConfirmedException();
         }
         
         await _throttle.RegisterSuccessAsync(user.UsernameOrEmail, ct);
         
+        _logger.LogInformation("User {UserId} successfully logged in", appUser.Id);
+
         var userDto = await MapToDtoAsync(appUser);
         return CreateAuthResponse(userDto);
     }
 
     public async Task ForgotPasswordAsync(ForgotPasswordDto dto, CancellationToken ct = default)
     {
+        _logger.LogInformation("Password reset requested for {Email}", dto.Email);
+
         if (!await _emailThrottle.IsAllowedAsync(dto.Email, ct))
             return;
         
@@ -142,19 +154,30 @@ public class AuthService : IAuthService
             user.Email!,
             "Reset Password",
             $"Reset your password by clicking here: {link}");
+        
+        _logger.LogInformation("Reset email sent to {Email}", user.Email);
     }
 
     public async Task ResetPasswordAsync(ResetPasswordDto dto, CancellationToken ct = default)
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user is null)
+        {
+            _logger.LogWarning("Password reset failed: user with email {Email} not found", dto.Email);
             throw new ValidationException("Invalid request");
+        }
 
         var decodedToken = DecodeToken(dto.Token);
 
         var result = await _userManager.ResetPasswordAsync(user, decodedToken, dto.NewPassword);
         if (!result.Succeeded)
+        {
+            var reason = result.Errors.FirstOrDefault()?.Description ?? "Unknown reason";
+            _logger.LogWarning("Password reset failed for user {UserId}: {Reason}", user.Id, reason);
             throw new ValidationException("Failed to reset password.");
+        }
+
+        _logger.LogInformation("Password reset succeeded for user {UserId}", user.Id);
     }
 
     public async Task ResendConfirmationEmailAsync(ResendConfirmationDto dto, CancellationToken ct = default)
@@ -180,13 +203,18 @@ public class AuthService : IAuthService
             user.Email!,
             "Confirm your email",
             $"Please confirm your account by clicking here: {link}");
+        
+        _logger.LogInformation("Confirmation email resent to {Email}", user.Email);
     }
 
     public async Task<bool> ConfirmEmailAsync(ConfirmEmailDto dto, CancellationToken ct = default)
     { 
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user is null)
+        {
+            _logger.LogWarning("Email confirmation attempt failed: user with email {Email} not found", dto.Email);
             throw new ValidationException("Invalid request");
+        }
 
         if (await _userManager.IsEmailConfirmedAsync(user))
             return false;
@@ -195,8 +223,12 @@ public class AuthService : IAuthService
         
         var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
         if (!result.Succeeded)
+        {
+            _logger.LogWarning("Invalid or expired confirmation attempt for user {UserId}", user.Id);
             throw new ValidationException("Failed to confirm email.");
+        }
 
+        _logger.LogInformation("Email confirmed successfully for user {UserId}", user.Id);
         return true;
     }
 

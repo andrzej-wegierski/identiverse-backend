@@ -2,6 +2,7 @@ using Domain.Abstractions;
 using Domain.Exceptions;
 using Domain.Models;
 using Domain.Services;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Tests.Services;
@@ -12,18 +13,20 @@ public class PersonServiceTests
     private readonly Mock<IIdentityService> _identity = new();
     private readonly Mock<IAccessControlService> _access = new();
     private readonly Mock<ICurrentUserContext> _current = new();
+    private readonly Mock<ILogger<PersonService>> _logger = new();
     private PersonService CreateSut()
     {
         _repo.Invocations.Clear();
         _identity.Invocations.Clear();
         _access.Invocations.Clear();
         _current.Invocations.Clear();
+        _logger.Invocations.Clear();
 
         // Allow all access by default for unit tests unless overridden
         _access.Setup(a => a.CanAccessPersonAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         _current.SetupGet(c => c.UserId).Returns(5);
-        return new PersonService(_repo.Object, _identity.Object, _access.Object, _current.Object);
+        return new PersonService(_repo.Object, _identity.Object, _access.Object, _current.Object, _logger.Object);
     }
 
     [Test]

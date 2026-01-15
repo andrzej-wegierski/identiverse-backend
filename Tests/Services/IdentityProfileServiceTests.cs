@@ -2,6 +2,7 @@ using Domain.Abstractions;
 using Domain.Enums;
 using Domain.Models;
 using Domain.Services;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Tests.Services;
@@ -9,13 +10,14 @@ namespace Tests.Services;
 public class IdentityProfileServiceTests
 {
     private readonly Mock<IAccessControlService> _access = new();
+    private readonly Mock<ILogger<IdentityProfileService>> _logger = new();
     private IdentityProfileService CreateSut(IIdentityProfileRepository repo)
     {
         _access.Setup(a => a.CanAccessPersonAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         _access.Setup(a => a.EnsureCanAccessProfileAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        return new IdentityProfileService(repo, _access.Object);
+        return new IdentityProfileService(repo, _access.Object, _logger.Object);
     }
 
     [Test]

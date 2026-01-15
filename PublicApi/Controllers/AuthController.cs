@@ -21,10 +21,10 @@ public class AuthController : ControllerBase
 
     [HttpPost("register")]
     [AllowAnonymous]
-    public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterUserDto dto, CancellationToken ct)
+    public async Task<IActionResult> Register([FromBody] RegisterUserDto dto, CancellationToken ct)
     {
-        var result = await  _auth.RegisterAsync(dto, ct);
-        return Ok(result);
+        await _auth.RegisterAsync(dto, ct);
+        return Created("", new { Message = "Please confirm your email" });
     } 
     
     [HttpPost("login")]

@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 
@@ -23,6 +24,7 @@ public class AuthServiceTests
     private readonly Mock<IEmailSender> _emailSenderMock = new();
     private readonly Mock<ILoginThrottle> _throttleMock = new();
     private readonly Mock<IEmailThrottle> _emailThrottleMock = new();
+    private readonly Mock<ILogger<AuthService>> _loggerMock = new();
     private IOptions<JwtOptions> _jwtOptions = null!;
     private IOptions<FrontendLinksOptions> _frontendOptions = null!;
 
@@ -61,6 +63,7 @@ public class AuthServiceTests
         _emailSenderMock.Invocations.Clear();
         _throttleMock.Invocations.Clear();
         _emailThrottleMock.Invocations.Clear();
+        _loggerMock.Invocations.Clear();
     }
 
     private AuthService CreateSut()
@@ -72,7 +75,8 @@ public class AuthServiceTests
             _throttleMock.Object,
             _emailThrottleMock.Object,
             _emailSenderMock.Object,
-            _frontendOptions);
+            _frontendOptions,
+            _loggerMock.Object);
     }
 
     [Test]
@@ -96,9 +100,7 @@ public class AuthServiceTests
         var result = await sut.RegisterAsync(reg);
 
         Assert.That(result.AccessToken, Is.Empty);
-        Assert.That(result.Expires, Is.EqualTo(DateTimeOffset.MinValue));
-        Assert.That(result.User, Is.Not.Null);
-        Assert.That(result.User!.Username, Is.EqualTo("newuser"));
+        Assert.That(result.User, Is.Null);
         
         _userManagerMock.Verify(m => m.CreateAsync(It.Is<ApplicationUser>(u => u.UserName == reg.Username), reg.Password), Times.Once);
         _userManagerMock.Verify(m => m.AddToRoleAsync(It.IsAny<ApplicationUser>(), "User"), Times.Once);
