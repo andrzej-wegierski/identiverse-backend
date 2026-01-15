@@ -2,6 +2,7 @@ using identiverse_backend.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Resend;
 
 namespace Tests.Services;
 
@@ -13,23 +14,17 @@ public class EmailSenderTests
         // Arrange
         var loggerMock = new Mock<ILogger<EmailSender>>();
         var configMock = new Mock<IConfiguration>();
+        var resendMock = new Mock<IResend>();
         configMock.Setup(c => c["Resend:ApiKey"]).Returns("test-key");
         configMock.Setup(c => c["Resend:FromEmail"]).Returns("test@example.com");
         
-        var sender = new EmailSender(loggerMock.Object, configMock.Object);
+        var sender = new EmailSender(loggerMock.Object, configMock.Object, resendMock.Object);
         var email = "test@example.com";
         var subject = "Test Subject";
         var message = "Hello World";
 
-        // Act & Assert (it will try to send via Resend and probably fail because of invalid key, but we check if it logs)
-        try 
-        {
-            await sender.SendEmailAsync(email, subject, message);
-        }
-        catch
-        {
-            // Ignore Resend client errors during test
-        }
+        // Act
+        await sender.SendEmailAsync(email, subject, message);
 
         // Assert
         loggerMock.Verify(
@@ -40,5 +35,7 @@ public class EmailSenderTests
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.AtLeastOnce);
+        
+        resendMock.Verify(x => x.EmailSendAsync(It.IsAny<EmailMessage>(), default), Times.Once);
     }
 }

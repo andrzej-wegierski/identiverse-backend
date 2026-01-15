@@ -14,7 +14,7 @@ builder.Services.AddFrontendCors();
 
 builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddDomain();
-builder.Services.AddPublicApi();
+builder.Services.AddPublicApi(builder.Configuration);
 
 builder.Services.AddFrontendLinks(builder.Configuration, builder.Environment);
 

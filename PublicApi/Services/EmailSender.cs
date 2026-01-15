@@ -10,12 +10,11 @@ public class EmailSender : IEmailSender
     private readonly IResend _resend;
     private readonly string _fromEmail;
 
-    public EmailSender(ILogger<EmailSender> logger, IConfiguration configuration)
+    public EmailSender(ILogger<EmailSender> logger, IConfiguration configuration, IResend resend)
     {
         _logger = logger;
-        var apiKey = configuration["Resend:ApiKey"] ?? throw new InvalidOperationException("Resend API Key is missing");
+        _resend = resend;
         _fromEmail = configuration["Resend:FromEmail"] ?? "onboarding@resend.dev";
-        _resend = ResendClient.Create(apiKey);
     }
 
     public async Task SendEmailAsync(string email, string subject, string htmlMessage)
