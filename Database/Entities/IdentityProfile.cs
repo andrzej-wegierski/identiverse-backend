@@ -64,6 +64,8 @@ public class IdentityProfileEntityConfiguration : IEntityTypeConfiguration<Ident
             .HasForeignKey(p => p.PersonId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(p => new { p.PersonId, p.Context, p.IsDefaultForContext });
+        builder.HasIndex(p => new { p.PersonId, p.Context })
+            .IsUnique()
+            .HasFilter("\"IsDefaultForContext\" = true");
     }
 }
