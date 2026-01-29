@@ -91,6 +91,7 @@ public class IdentityProfileRepository : IIdentityProfileRepository
             {
                 existingDefault.IsDefaultForContext = false;
                 existingDefault.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync(ct);
             }
 
             target.IsDefaultForContext = true;
